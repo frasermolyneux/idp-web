@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!-- Enable .NET code style analysis -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Enable documentation file generation for better IDE analysis -->
+    <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
+  </PropertyGroup>
+</Project>
