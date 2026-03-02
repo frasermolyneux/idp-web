@@ -32,6 +32,7 @@ resource "azurerm_linux_web_app" "app" {
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = local.app_insights_connection_string
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "ASPNETCORE_ENVIRONMENT"                     = var.environment == "prd" ? "Production" : "Development"
+    "AzureAd__Instance"                          = "https://login.microsoftonline.com/"
     "AzureAd__TenantId"                          = data.azurerm_client_config.current.tenant_id
     "AzureAd__ClientId"                          = local.idp_web_app_client_id
     "AzureAd__ClientSecret"                      = format("@Microsoft.KeyVault(SecretUri=%s)", local.idp_obo_client_secret_uri)
