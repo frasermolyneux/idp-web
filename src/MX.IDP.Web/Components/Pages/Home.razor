@@ -5,10 +5,12 @@
 @using Markdig
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Diagnostics
+@using Microsoft.Identity.Web
 @inject IChatApiService ChatApi
 @inject IConversationService ConversationService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ConversationNotifier ConversationNotifier
+@inject NavigationManager Navigation
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <PageTitle>IDP Chat</PageTitle>
@@ -175,6 +177,11 @@
             };
 
             await ConversationService.SaveMessageAsync(_currentConversationId, assistantMessage);
+        }
+        catch (MicrosoftIdentityWebChallengeUserException)
+        {
+            Navigation.NavigateTo("MicrosoftIdentity/Account/SignIn", forceLoad: true);
+            return;
         }
         catch (Exception ex)
         {
