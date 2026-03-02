@@ -4,6 +4,7 @@
 @using MX.IDP.Web.Services
 @using Markdig
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Diagnostics
 @inject IChatApiService ChatApi
 @inject IConversationService ConversationService
 @inject AuthenticationStateProvider AuthStateProvider
@@ -11,43 +12,82 @@
 
 <PageTitle>IDP Chat</PageTitle>
 
-<div style="display: flex; flex-direction: column; height: 100%; padding: 16px;">
-    <!-- Messages area -->
-    <div style="flex: 1; overflow-y: auto; padding-bottom: 16px;" @ref="_messagesContainer">
-        @if (_messages.Count == 0)
-        {
-            <div style="text-align: center; padding: 48px; color: var(--neutral-foreground-hint);">
-                <FluentIcon Value="@(new Icons.Regular.Size48.ChatSparkle())" />
-                <h2>How can I help?</h2>
-                <p>Ask about Azure resources, compliance, costs, or anything about the platform.</p>
+<div class="chat-messages" @ref="_messagesContainer">
+    @if (_messages.Count == 0 && !_isLoading)
+    {
+        <div class="empty-state">
+            <div class="terminal-welcome">
+                <div><span class="prompt">&gt;</span> <span class="highlight">Welcome to IDP</span></div>
+                <div><span class="prompt">&gt;</span> Type a message to get started.</div>
+                <div><span class="prompt">&gt;</span></div>
+                <div><span class="prompt">&gt;</span> Examples:</div>
+                <div><span class="prompt">&gt;</span> <span class="example">"Show me non-compliant resources in dev"</span></div>
+                <div><span class="prompt">&gt;</span> <span class="example">"What's the status of my deployments?"</span></div>
+                <div><span class="prompt">&gt;</span> <span class="example">"List all Azure Advisor recommendations"</span></div>
+                <div><span class="prompt">&gt;</span> <span class="cursor-blink"></span></div>
             </div>
-        }
-        @foreach (var msg in _messages)
+        </div>
+    }
+    @for (int i = 0; i < _messages.Count; i++)
+    {
+        var msg = _messages[i];
+        var index = i;
+        if (msg.Role == "user")
         {
-            <div style="margin-bottom: 16px; display: flex; @(msg.Role == "user" ? "justify-content: flex-end;" : "")">
-                <FluentCard Style="@(msg.Role == "user" ? "max-width: 70%; background: var(--accent-fill-rest); color: white;" : "max-width: 70%;")">
+            <div class="chat-bubble-user">
+                <div class="chat-card">
+                    <div class="chat-role">you &gt;</div>
                     @((MarkupString)Markdown.ToHtml(msg.Content, _markdownPipeline))
-                </FluentCard>
+                </div>
             </div>
         }
-        @if (_isLoading)
+        else
         {
-            <div style="margin-bottom: 16px;">
-                <FluentCard Style="max-width: 70%;">
-                    <FluentProgressRing Style="width: 20px; height: 20px;" />
-                    <span style="margin-left: 8px;">Thinking...</span>
-                </FluentCard>
+            <div class="chat-bubble-assistant">
+                <div class="chat-card">
+                    <div class="chat-role">idp &gt;</div>
+                    @((MarkupString)Markdown.ToHtml(msg.Content, _markdownPipeline))
+                    @if (_debugInfo.ContainsKey(index))
+                    {
+                        <button class="debug-toggle" @onclick="() => ToggleDebug(index)">
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Info())" Style="width: 14px; height: 14px;" />
+                            @(_expandedDebug.Contains(index) ? "hide details" : "show details")
+                        </button>
+                        @if (_expandedDebug.Contains(index))
+                        {
+                            <div class="debug-panel">
+                                <div>Response time: @_debugInfo[index].ResponseTimeMs ms</div>
+                                <div>Conversation: @(_currentConversationId ?? "—")</div>
+                                <div>Timestamp: @msg.Timestamp.ToString("yyyy-MM-dd HH:mm:ss UTC")</div>
+                            </div>
+                        }
+                    }
+                </div>
             </div>
         }
-    </div>
+    }
+    @if (_isLoading)
+    {
+        <div class="chat-bubble-assistant">
+            <div class="loading-indicator">
+                <FluentProgressRing Style="width: 16px; height: 16px;" />
+                <span>Processing...</span>
+            </div>
+        </div>
+    }
+</div>
 
-    <!-- Input area -->
-    <div style="display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--neutral-stroke-divider-rest);">
-        <FluentTextArea @bind-Value="_userInput" Placeholder="Ask me anything..." Style="flex: 1;"
-            @onkeydown="HandleKeyDown" Disabled="_isLoading" Rows="1" Resize="TextAreaResize.Vertical" />
-        <FluentButton Appearance="Appearance.Accent" OnClick="SendMessage" Disabled="@(string.IsNullOrWhiteSpace(_userInput) || _isLoading)"
-            IconStart="@(new Icons.Regular.Size20.Send())">Send</FluentButton>
+<div class="chat-input-area">
+    <div class="chat-input-row">
+        <span class="chat-prompt-prefix">&gt;</span>
+        <FluentTextArea @bind-Value="_userInput" Placeholder="Ask me anything..."
+            Style="flex: 1;" @onkeydown="HandleKeyDown" Disabled="_isLoading" Rows="1"
+            Resize="TextAreaResize.Vertical" />
+        <FluentButton Appearance="Appearance.Accent" OnClick="SendMessage"
+            Disabled="@(string.IsNullOrWhiteSpace(_userInput) || _isLoading)"
+            IconStart="@(new Icons.Regular.Size20.Send())" Style="height: 40px;">Send</FluentButton>
     </div>
+    <div class="chat-input-hint">Press Enter to send · Shift+Enter for new line</div>
 </div>
 
 @code {
@@ -59,6 +99,8 @@
     private string? _currentConversationId;
     private string? _userId;
     private ElementReference _messagesContainer;
+    private Dictionary<int, MessageDebugInfo> _debugInfo = new();
+    private HashSet<int> _expandedDebug = new();
 
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -102,10 +144,19 @@
 
             await ConversationService.SaveMessageAsync(_currentConversationId, userMessage);
 
+            var stopwatch = Stopwatch.StartNew();
             var response = await ChatApi.SendMessageAsync(messageText, _currentConversationId, _messages);
+            stopwatch.Stop();
 
             var assistantMessage = new ChatMessage { Role = "assistant", Content = response };
             _messages.Add(assistantMessage);
+
+            var assistantIndex = _messages.Count - 1;
+            _debugInfo[assistantIndex] = new MessageDebugInfo
+            {
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds
+            };
+
             await ConversationService.SaveMessageAsync(_currentConversationId, assistantMessage);
         }
         catch (Exception ex)
@@ -125,5 +176,18 @@
         {
             await SendMessage();
         }
+    }
+
+    private void ToggleDebug(int index)
+    {
+        if (!_expandedDebug.Remove(index))
+        {
+            _expandedDebug.Add(index);
+        }
+    }
+
+    private class MessageDebugInfo
+    {
+        public long ResponseTimeMs { get; set; }
     }
 }

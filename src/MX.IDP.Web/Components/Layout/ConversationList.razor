@@ -1,0 +1,82 @@
+@inject IConversationService ConversationService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@implements IDisposable
+
+@foreach (var conv in _conversations)
+{
+    var isActive = _currentUri.Contains(conv.Id);
+    <div class="conv-item @(isActive ? "active" : "")" @onclick="() => NavigateToChat(conv.Id)">
+        <FluentIcon Value="@(new Icons.Regular.Size20.Chat())" Style="flex-shrink: 0; color: var(--idp-text-dim);" />
+        <div class="conv-item-text">
+            <div class="conv-item-title">@conv.Title</div>
+            <div class="conv-item-time">@FormatTimestamp(conv.UpdatedAt)</div>
+        </div>
+        <button class="conv-delete" @onclick="() => DeleteConversation(conv)" @onclick:stopPropagation="true"
+                style="background: none; border: none; cursor: pointer; padding: 4px;">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Delete())" Style="color: var(--idp-text-dim);" />
+        </button>
+    </div>
+}
+
+@code {
+    private List<Conversation> _conversations = new();
+    private string? _userId;
+    private string _currentUri = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUri = Navigation.Uri;
+        Navigation.LocationChanged += OnLocationChanged;
+        await LoadConversationsAsync();
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _currentUri = e.Location;
+        await LoadConversationsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadConversationsAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _userId = authState.User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
+                ?? authState.User.FindFirst("oid")?.Value
+                ?? "anonymous";
+        _conversations = await ConversationService.GetConversationsAsync(_userId);
+    }
+
+    private void NavigateToChat(string conversationId)
+    {
+        Navigation.NavigateTo($"/chat/{conversationId}");
+    }
+
+    private async Task DeleteConversation(Conversation conv)
+    {
+        if (_userId != null)
+        {
+            await ConversationService.DeleteConversationAsync(_userId, conv.Id);
+            await LoadConversationsAsync();
+            if (Navigation.Uri.Contains(conv.Id))
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+    }
+
+    private static string FormatTimestamp(DateTime timestamp)
+    {
+        var diff = DateTime.UtcNow - timestamp;
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        return timestamp.ToString("MMM d");
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}
