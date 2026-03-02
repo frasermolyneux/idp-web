@@ -32,6 +32,7 @@ if (!string.IsNullOrEmpty(cosmosEndpoint))
 
 // Register services
 builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<ConversationNotifier>();
 
 // Configure ChatApiService HttpClient
 builder.Services.AddHttpClient<IChatApiService, ChatApiService>(client =>

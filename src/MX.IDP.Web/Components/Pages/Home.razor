@@ -8,6 +8,7 @@
 @inject IChatApiService ChatApi
 @inject IConversationService ConversationService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject ConversationNotifier ConversationNotifier
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <PageTitle>IDP Chat</PageTitle>
@@ -143,6 +144,7 @@
 
                 var title = messageText.Length > 50 ? messageText[..50] + "..." : messageText;
                 await ConversationService.UpdateConversationTitleAsync(_currentConversationId, title);
+                ConversationNotifier.NotifyChanged();
             }
 
             await ConversationService.SaveMessageAsync(_currentConversationId, userMessage);

@@ -1,22 +1,32 @@
 @inject IConversationService ConversationService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject ConversationNotifier ConversationNotifier
 @implements IDisposable
 
-@foreach (var conv in _conversations)
+@if (_conversations.Count == 0)
 {
-    var isActive = _currentUri.Contains(conv.Id);
-    <div class="conv-item @(isActive ? "active" : "")" @onclick="() => NavigateToChat(conv.Id)">
-        <FluentIcon Value="@(new Icons.Regular.Size20.Chat())" Style="flex-shrink: 0; color: var(--idp-text-dim);" />
-        <div class="conv-item-text">
-            <div class="conv-item-title">@conv.Title</div>
-            <div class="conv-item-time">@FormatTimestamp(conv.UpdatedAt)</div>
-        </div>
-        <button class="conv-delete" @onclick="() => DeleteConversation(conv)" @onclick:stopPropagation="true"
-                style="background: none; border: none; cursor: pointer; padding: 4px;">
-            <FluentIcon Value="@(new Icons.Regular.Size20.Delete())" Style="color: var(--idp-text-dim);" />
-        </button>
+    <div style="padding: 16px; color: var(--idp-text-dim); font-size: 12px; text-align: center;">
+        No conversations yet
     </div>
+}
+else
+{
+    @foreach (var conv in _conversations)
+    {
+        var isActive = _currentUri.Contains(conv.Id);
+        <div class="conv-item @(isActive ? "active" : "")" @onclick="() => NavigateToChat(conv.Id)">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Chat())" Style="flex-shrink: 0; color: var(--idp-text-dim);" />
+            <div class="conv-item-text">
+                <div class="conv-item-title">@conv.Title</div>
+                <div class="conv-item-time">@FormatTimestamp(conv.UpdatedAt)</div>
+            </div>
+            <button class="conv-delete" @onclick="() => DeleteConversation(conv)" @onclick:stopPropagation="true"
+                    style="background: none; border: none; cursor: pointer; padding: 4px;">
+                <FluentIcon Value="@(new Icons.Regular.Size20.Delete())" Style="color: var(--idp-text-dim);" />
+            </button>
+        </div>
+    }
 }
 
 @code {
@@ -28,7 +38,14 @@
     {
         _currentUri = Navigation.Uri;
         Navigation.LocationChanged += OnLocationChanged;
+        ConversationNotifier.OnChange += OnConversationChanged;
         await LoadConversationsAsync();
+    }
+
+    private async void OnConversationChanged()
+    {
+        await LoadConversationsAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -78,5 +95,6 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        ConversationNotifier.OnChange -= OnConversationChanged;
     }
 }
