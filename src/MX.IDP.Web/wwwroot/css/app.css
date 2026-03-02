@@ -268,6 +268,17 @@ html, body {
     color: var(--idp-text-dim);
     margin-top: 6px;
     font-family: var(--idp-font-mono);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.token-summary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--idp-text-dim);
+    font-size: 11px;
 }
 
 /* Empty State */

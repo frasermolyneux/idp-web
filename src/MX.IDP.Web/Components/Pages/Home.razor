@@ -62,6 +62,12 @@
                                 <div>Response time: @_debugInfo[index].ResponseTimeMs ms</div>
                                 <div>Conversation: @(_currentConversationId ?? "—")</div>
                                 <div>Timestamp: @msg.Timestamp.ToString("yyyy-MM-dd HH:mm:ss UTC")</div>
+                                @if (_debugInfo[index].Usage is not null)
+                                {
+                                    <div>Prompt tokens: @_debugInfo[index].Usage!.PromptTokens</div>
+                                    <div>Completion tokens: @_debugInfo[index].Usage!.CompletionTokens</div>
+                                    <div>Total tokens: @_debugInfo[index].Usage!.TotalTokens</div>
+                                }
                             </div>
                         }
                     }
@@ -92,7 +98,16 @@
             Send
         </button>
     </div>
-    <div class="chat-input-hint">Press Enter to send · Shift+Enter for new line</div>
+    <div class="chat-input-hint">
+        <span>Press Enter to send · Shift+Enter for new line</span>
+        @if (_totalRequests > 0)
+        {
+            <span class="token-summary">
+                <FluentIcon Value="@(new Icons.Regular.Size16.DataUsage())" Style="width: 12px; height: 12px; vertical-align: middle;" />
+                @_totalRequests requests · @_totalTokens tokens (@_totalPromptTokens prompt + @_totalCompletionTokens completion)
+            </span>
+        }
+    </div>
 </div>
 
 @code {
@@ -107,6 +122,10 @@
     private Dictionary<int, MessageDebugInfo> _debugInfo = new();
     private HashSet<int> _expandedDebug = new();
     private bool _preventEnter;
+    private int _totalRequests;
+    private int _totalTokens;
+    private int _totalPromptTokens;
+    private int _totalCompletionTokens;
 
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -126,16 +145,24 @@
         {
             _currentConversationId = ConversationId;
             _messages = await ConversationService.GetMessagesAsync(ConversationId);
-            _debugInfo.Clear();
-            _expandedDebug.Clear();
+            ResetSessionCounters();
         }
         else if (string.IsNullOrEmpty(ConversationId) && _currentConversationId != null)
         {
             _currentConversationId = null;
             _messages = new();
-            _debugInfo.Clear();
-            _expandedDebug.Clear();
+            ResetSessionCounters();
         }
+    }
+
+    private void ResetSessionCounters()
+    {
+        _debugInfo.Clear();
+        _expandedDebug.Clear();
+        _totalRequests = 0;
+        _totalTokens = 0;
+        _totalPromptTokens = 0;
+        _totalCompletionTokens = 0;
     }
 
     private async Task SendMessage()
@@ -167,14 +194,23 @@
             var response = await ChatApi.SendMessageAsync(messageText, _currentConversationId, _messages);
             stopwatch.Stop();
 
-            var assistantMessage = new ChatMessage { Role = "assistant", Content = response };
+            var assistantMessage = new ChatMessage { Role = "assistant", Content = response.Message };
             _messages.Add(assistantMessage);
 
             var assistantIndex = _messages.Count - 1;
             _debugInfo[assistantIndex] = new MessageDebugInfo
             {
-                ResponseTimeMs = stopwatch.ElapsedMilliseconds
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds,
+                Usage = response.Usage
             };
+
+            _totalRequests++;
+            if (response.Usage is not null)
+            {
+                _totalPromptTokens += response.Usage.PromptTokens;
+                _totalCompletionTokens += response.Usage.CompletionTokens;
+                _totalTokens += response.Usage.TotalTokens;
+            }
 
             await ConversationService.SaveMessageAsync(_currentConversationId, assistantMessage);
         }
@@ -218,5 +254,6 @@
     private class MessageDebugInfo
     {
         public long ResponseTimeMs { get; set; }
+        public TokenUsageInfo? Usage { get; set; }
     }
 }

@@ -46,7 +46,7 @@ public class ChatApiServiceTests
 
         var result = await sut.SendMessageAsync("Hi", null, null);
 
-        Assert.Equal("Hello from agent", result);
+        Assert.Equal("Hello from agent", result.Message);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class ChatApiServiceTests
 
         var result = await sut.SendMessageAsync("Hi", null, null);
 
-        Assert.Equal("plain text response", result);
+        Assert.Equal("plain text response", result.Message);
     }
 
     [Fact]

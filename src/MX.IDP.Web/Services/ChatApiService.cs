@@ -25,7 +25,7 @@ public class ChatApiService : IChatApiService
         _logger = logger;
     }
 
-    public async Task<string> SendMessageAsync(string message, string? conversationId, List<ChatMessage>? history)
+    public async Task<ChatApiResponse> SendMessageAsync(string message, string? conversationId, List<ChatMessage>? history)
     {
         await AttachBearerTokenAsync();
 
@@ -44,21 +44,33 @@ public class ChatApiService : IChatApiService
 
         var result = await response.Content.ReadAsStringAsync();
 
-        // Try to parse as JSON response from idp-agents
         try
         {
             using var doc = JsonDocument.Parse(result);
-            if (doc.RootElement.TryGetProperty("message", out var messageProp))
+            var root = doc.RootElement;
+
+            var apiResponse = new ChatApiResponse
             {
-                return messageProp.GetString() ?? result;
+                Message = root.TryGetProperty("message", out var msgProp) ? msgProp.GetString() ?? result : result,
+                ConversationId = root.TryGetProperty("conversationId", out var convProp) ? convProp.GetString() : null
+            };
+
+            if (root.TryGetProperty("usage", out var usageProp) && usageProp.ValueKind == JsonValueKind.Object)
+            {
+                apiResponse.Usage = new TokenUsageInfo
+                {
+                    PromptTokens = usageProp.TryGetProperty("promptTokens", out var pt) ? pt.GetInt32() : 0,
+                    CompletionTokens = usageProp.TryGetProperty("completionTokens", out var ct) ? ct.GetInt32() : 0,
+                    TotalTokens = usageProp.TryGetProperty("totalTokens", out var tt) ? tt.GetInt32() : 0
+                };
             }
+
+            return apiResponse;
         }
         catch (JsonException)
         {
-            // Not JSON — return raw string
+            return new ChatApiResponse { Message = result };
         }
-
-        return result;
     }
 
     private async Task AttachBearerTokenAsync()
