@@ -46,3 +46,37 @@ resource "azurerm_linux_web_app" "app" {
     ignore_changes = [app_settings["WEBSITE_RUN_FROM_PACKAGE"]]
   }
 }
+
+resource "azurerm_app_service_custom_hostname_binding" "primary" {
+  hostname            = local.public_hostname
+  app_service_name    = azurerm_linux_web_app.app.name
+  resource_group_name = azurerm_linux_web_app.app.resource_group_name
+
+  depends_on = [
+    azurerm_dns_txt_record.app_service_verification,
+    azurerm_dns_cname_record.web_app
+  ]
+}
+
+resource "time_sleep" "wait_for_hostname_binding" {
+  create_duration = "60s"
+
+  depends_on = [
+    azurerm_app_service_custom_hostname_binding.primary
+  ]
+}
+
+resource "azurerm_app_service_managed_certificate" "primary" {
+  custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.primary.id
+
+  depends_on = [
+    time_sleep.wait_for_hostname_binding,
+    azurerm_dns_cname_record.web_app
+  ]
+}
+
+resource "azurerm_app_service_certificate_binding" "primary" {
+  hostname_binding_id = azurerm_app_service_custom_hostname_binding.primary.id
+  certificate_id      = azurerm_app_service_managed_certificate.primary.id
+  ssl_state           = "SniEnabled"
+}

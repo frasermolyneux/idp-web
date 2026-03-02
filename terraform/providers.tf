@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.61.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.12.0"
+    }
   }
 
   backend "azurerm" {}
@@ -19,6 +23,15 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+
+  storage_use_azuread = true
+}
+
+provider "azurerm" {
+  alias           = "dns"
+  subscription_id = var.dns.subscription_id
+
+  features {}
 
   storage_use_azuread = true
 }

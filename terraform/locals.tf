@@ -19,5 +19,6 @@ locals {
   idp_agents_app_client_id  = data.terraform_remote_state.idp_core.outputs.idp_agents_app_client_id
   idp_obo_client_secret_uri = data.terraform_remote_state.idp_core.outputs.idp_obo_client_secret_uri
 
-  web_app_name = format("app-idp-web-%s-%s", var.environment, var.location)
+  web_app_name    = format("app-idp-web-%s-%s", var.environment, var.location)
+  public_hostname = "${var.dns.subdomain}.${var.dns.domain}"
 }

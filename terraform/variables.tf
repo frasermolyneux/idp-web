@@ -50,3 +50,12 @@ variable "platform_workloads_state" {
     tenant_id            = string
   })
 }
+
+variable "dns" {
+  type = object({
+    subscription_id     = string
+    resource_group_name = string
+    domain              = string
+    subdomain           = string
+  })
+}
