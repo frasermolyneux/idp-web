@@ -1,7 +1,15 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Reflection
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+
+@{
+    var entryAssembly = Assembly.GetEntryAssembly();
+    var informationalVersion = entryAssembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+    var buildVersion = informationalVersion.Split('+')[0];
+    var assemblyVersion = entryAssembly?.GetName().Version?.ToString() ?? "unknown";
+}
 
 <div style="display: flex; flex-direction: column; height: 100vh; background: #1e1e1e;">
     <header style="background: #181818; border-bottom: 1px solid #333; height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;">
@@ -9,6 +17,7 @@
             <FluentIcon Value="@(new Icons.Regular.Size24.Code())" Style="color: #0ea5e9;" />
             <span style="font-weight: 600; color: #e0e0e0; font-size: 15px;">IDP</span>
             <span style="color: #666; font-size: 13px;">Internal Developer Platform</span>
+            <span style="color: #444; font-size: 11px; margin-left: 4px;" title="Full: @informationalVersion&#10;Assembly: @assemblyVersion">v@(buildVersion)</span>
         </div>
         <AuthorizeView>
             <Authorized>

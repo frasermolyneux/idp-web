@@ -4,6 +4,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.FluentUI.AspNetCore.Components;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using MX.IDP.Web;
 using MX.IDP.Web.Components;
 using MX.IDP.Web.Services;
 
@@ -73,6 +74,8 @@ app.UseAuthorization();
 app.MapDefaultEndpoints();
 
 app.MapControllers();
+
+app.MapInfoEndpoint();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
