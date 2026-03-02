@@ -27,14 +27,7 @@ public class ChatApiService : IChatApiService
 
     public async Task<string> SendMessageAsync(string message, string? conversationId, List<ChatMessage>? history)
     {
-        try
-        {
-            await AttachBearerTokenAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to acquire OBO token. Calling API without authentication.");
-        }
+        await AttachBearerTokenAsync();
 
         var payload = new
         {
