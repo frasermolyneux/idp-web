@@ -52,7 +52,8 @@ public class ChatApiService : IChatApiService
             var apiResponse = new ChatApiResponse
             {
                 Message = root.TryGetProperty("message", out var msgProp) ? msgProp.GetString() ?? result : result,
-                ConversationId = root.TryGetProperty("conversationId", out var convProp) ? convProp.GetString() : null
+                ConversationId = root.TryGetProperty("conversationId", out var convProp) ? convProp.GetString() : null,
+                Agent = root.TryGetProperty("agent", out var agentProp) ? agentProp.GetString() : null
             };
 
             if (root.TryGetProperty("usage", out var usageProp) && usageProp.ValueKind == JsonValueKind.Object)

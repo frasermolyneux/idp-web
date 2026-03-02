@@ -59,6 +59,7 @@
                         @if (_expandedDebug.Contains(index))
                         {
                             <div class="debug-panel">
+                                <div>Agent: @(_debugInfo[index].Agent ?? "—")</div>
                                 <div>Response time: @_debugInfo[index].ResponseTimeMs ms</div>
                                 <div>Conversation: @(_currentConversationId ?? "—")</div>
                                 <div>Timestamp: @msg.Timestamp.ToString("yyyy-MM-dd HH:mm:ss UTC")</div>
@@ -201,6 +202,7 @@
             _debugInfo[assistantIndex] = new MessageDebugInfo
             {
                 ResponseTimeMs = stopwatch.ElapsedMilliseconds,
+                Agent = response.Agent,
                 Usage = response.Usage
             };
 
@@ -254,6 +256,7 @@
     private class MessageDebugInfo
     {
         public long ResponseTimeMs { get; set; }
+        public string? Agent { get; set; }
         public TokenUsageInfo? Usage { get; set; }
     }
 }

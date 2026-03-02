@@ -4,6 +4,7 @@ public class ChatApiResponse
 {
     public string Message { get; set; } = string.Empty;
     public string? ConversationId { get; set; }
+    public string? Agent { get; set; }
     public TokenUsageInfo? Usage { get; set; }
 }
 
