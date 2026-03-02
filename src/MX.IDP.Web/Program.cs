@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Azure.Cosmos;
 using Microsoft.FluentUI.AspNetCore.Components;
 using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 using MX.IDP.Web.Components;
 using MX.IDP.Web.Services;
 
@@ -48,6 +49,9 @@ builder.Services.AddFluentUIComponents();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddControllersWithViews()
+    .AddMicrosoftIdentityUI();
+
 builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
@@ -66,6 +70,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapDefaultEndpoints();
+
+app.MapControllers();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

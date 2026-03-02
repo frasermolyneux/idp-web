@@ -25,10 +25,10 @@ html, body {
 
 /* Sidebar */
 .sidebar {
-    width: 260px;
-    min-width: 260px;
+    width: 240px;
+    min-width: 240px;
     background: var(--idp-bg-secondary);
-    border-right: 1px solid var(--idp-border);
+    border-left: 1px solid var(--idp-border);
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -353,9 +353,57 @@ html, body {
     background: var(--idp-text-dim);
 }
 
-/* FluentUI overrides for dark theme */
-fluent-text-area::part(control) {
+/* Native textarea for chat input */
+.chat-textarea {
+    flex: 1;
+    background: var(--idp-bg);
+    color: var(--idp-text);
+    border: 1px solid var(--idp-border);
+    border-radius: 6px;
+    padding: 10px 14px;
     font-family: var(--idp-font-mono);
     font-size: 13px;
-    color: var(--idp-text);
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.chat-textarea:focus {
+    border-color: var(--idp-accent);
+}
+
+.chat-textarea::placeholder {
+    color: var(--idp-text-dim);
+}
+
+.chat-textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Send button */
+.send-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--idp-accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--idp-font-mono);
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    height: 40px;
+}
+
+.send-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }

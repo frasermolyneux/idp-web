@@ -3,32 +3,34 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 
-<FluentDesignTheme Mode="DesignThemeModes.Dark" />
 <div style="display: flex; flex-direction: column; height: 100vh; background: #1e1e1e;">
-    <header style="background: #181818; border-bottom: 1px solid #333; height: 48px; padding: 0 16px; display: flex; align-items: center;">
-        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="width: 100%; height: 100%;">
+    <header style="background: #181818; border-bottom: 1px solid #333; height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
             <FluentIcon Value="@(new Icons.Regular.Size24.Code())" Style="color: #0ea5e9;" />
-            <span style="font-weight: 600; color: #e0e0e0; margin-left: 8px; font-size: 15px;">IDP</span>
-            <span style="color: #666; margin-left: 6px; font-size: 13px;">Internal Developer Platform</span>
-            <FluentSpacer />
-            <AuthorizeView>
-                <Authorized>
-                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="gap: 10px; align-items: center;">
-                        <FluentIcon Value="@(new Icons.Regular.Size20.Person())" Style="color: #888;" />
-                        <span style="color: #aaa; font-size: 13px;">@context.User.Identity?.Name</span>
-                        <span style="color: #333;">|</span>
-                        <a href="/.auth/logout" style="color: #888; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
-                            Sign out
-                        </a>
-                    </FluentStack>
-                </Authorized>
-            </AuthorizeView>
-        </FluentStack>
+            <span style="font-weight: 600; color: #e0e0e0; font-size: 15px;">IDP</span>
+            <span style="color: #666; font-size: 13px;">Internal Developer Platform</span>
+        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Person())" Style="color: #888;" />
+                    <span style="color: #aaa; font-size: 13px;">@context.User.Identity?.Name</span>
+                    <span style="color: #444;">|</span>
+                    <a href="MicrosoftIdentity/Account/SignOut" style="color: #aaa; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                        <FluentIcon Value="@(new Icons.Regular.Size16.ArrowExit())" Style="color: #aaa;" />
+                        Sign out
+                    </a>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </header>
     <div style="display: flex; flex: 1; overflow: hidden;">
+        <main class="chat-main">
+            @Body
+        </main>
         <nav class="sidebar">
             <div class="sidebar-header">
-                <FluentButton Appearance="Appearance.Accent" OnClick='() => Navigation.NavigateTo("/")' Style="width: 100%;"
+                <FluentButton Appearance="Appearance.Accent" OnClick="StartNewChat" Style="width: 100%;"
                     IconStart="@(new Icons.Regular.Size20.Add())">
                     New Chat
                 </FluentButton>
@@ -37,8 +39,12 @@
                 <ConversationList />
             </div>
         </nav>
-        <main class="chat-main">
-            @Body
-        </main>
     </div>
 </div>
+
+@code {
+    private void StartNewChat()
+    {
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

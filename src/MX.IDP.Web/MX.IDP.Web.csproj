@@ -11,12 +11,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.*" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.14.*" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="3.10.*" />
-    <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.10.*" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.4.*" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.4.*" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.57.*" />
     <PackageReference Include="Newtonsoft.Json" Version="13.*" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.*" />
-    <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="3.10.*" />
+    <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="4.4.*" />
     <PackageReference Include="Azure.Identity" Version="1.*" />
     <PackageReference Include="Markdig" Version="0.*" />
   </ItemGroup>

@@ -80,12 +80,14 @@
 <div class="chat-input-area">
     <div class="chat-input-row">
         <span class="chat-prompt-prefix">&gt;</span>
-        <FluentTextArea @bind-Value="_userInput" Placeholder="Ask me anything..."
-            Style="flex: 1;" @onkeydown="HandleKeyDown" Disabled="_isLoading" Rows="1"
-            Resize="TextAreaResize.Vertical" />
-        <FluentButton Appearance="Appearance.Accent" OnClick="SendMessage"
-            Disabled="@(string.IsNullOrWhiteSpace(_userInput) || _isLoading)"
-            IconStart="@(new Icons.Regular.Size20.Send())" Style="height: 40px;">Send</FluentButton>
+        <textarea @bind="_userInput" @bind:event="oninput" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="_preventEnter"
+            placeholder="Ask me anything..." rows="1" disabled="@_isLoading"
+            class="chat-textarea"></textarea>
+        <button class="send-btn" @onclick="SendMessage"
+            disabled="@(string.IsNullOrWhiteSpace(_userInput) || _isLoading)">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Send())" />
+            Send
+        </button>
     </div>
     <div class="chat-input-hint">Press Enter to send · Shift+Enter for new line</div>
 </div>
@@ -101,6 +103,7 @@
     private ElementReference _messagesContainer;
     private Dictionary<int, MessageDebugInfo> _debugInfo = new();
     private HashSet<int> _expandedDebug = new();
+    private bool _preventEnter;
 
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -174,7 +177,12 @@
     {
         if (e.Key == "Enter" && !e.ShiftKey)
         {
+            _preventEnter = true;
             await SendMessage();
+        }
+        else
+        {
+            _preventEnter = false;
         }
     }
 
