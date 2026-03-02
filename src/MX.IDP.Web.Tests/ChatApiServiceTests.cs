@@ -128,7 +128,7 @@ public class ChatApiServiceTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task SendMessageAsync_ContinuesWithoutAuth_WhenTokenAcquisitionFails()
+    public async Task SendMessageAsync_ThrowsWhenTokenAcquisitionFails()
     {
         _mockTokenAcquisition
             .Setup(x => x.GetAccessTokenForUserAsync(
@@ -151,9 +151,7 @@ public class ChatApiServiceTests
 
         var sut = CreateService(httpClient, config);
 
-        var result = await sut.SendMessageAsync("Hi", null, null);
-
-        Assert.Equal("ok", result);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.SendMessageAsync("Hi", null, null));
     }
 
     [Fact]
