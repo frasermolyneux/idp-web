@@ -11,10 +11,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // Entra ID Authentication
+var initialScopes = new[] { builder.Configuration["IdpAgents:Scopes"] ?? "" }
+    .Where(s => !string.IsNullOrEmpty(s)).ToArray();
+
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
-    .EnableTokenAcquisitionToCallDownstreamApi()
+    .EnableTokenAcquisitionToCallDownstreamApi(initialScopes)
     .AddInMemoryTokenCaches();
+
+builder.Services.AddControllersWithViews()
+    .AddMicrosoftIdentityUI();
 
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
@@ -62,6 +68,7 @@ app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();
 app.MapDefaultEndpoints();
 
 app.MapRazorComponents<App>()
