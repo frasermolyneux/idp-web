@@ -418,3 +418,108 @@ html, body {
     opacity: 0.4;
     cursor: not-allowed;
 }
+
+/* Agent Eye Toggle */
+.chat-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.agent-eye-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: transparent;
+    color: var(--idp-text-muted);
+    border: 1px solid var(--idp-border);
+    border-radius: 4px;
+    font-family: var(--idp-font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.agent-eye-toggle:hover {
+    color: var(--idp-accent);
+    border-color: var(--idp-accent);
+}
+
+.agent-eye-toggle.active {
+    color: #f59e0b;
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+/* Agent Eye Token Overlay */
+.agent-eye-overlay {
+    line-height: 1.8;
+    padding: 8px 0;
+    font-family: var(--idp-font-mono);
+    font-size: 13px;
+}
+
+.token-span {
+    padding: 1px 0;
+    border-radius: 2px;
+    cursor: help;
+    white-space: pre-wrap;
+}
+
+.token-high {
+    background: rgba(34, 197, 94, 0.15);
+    border-bottom: 2px solid rgba(34, 197, 94, 0.6);
+}
+
+.token-medium {
+    background: rgba(245, 158, 11, 0.15);
+    border-bottom: 2px solid rgba(245, 158, 11, 0.6);
+}
+
+.token-low {
+    background: rgba(239, 68, 68, 0.15);
+    border-bottom: 2px solid rgba(239, 68, 68, 0.6);
+}
+
+/* Function Call Trace */
+.function-trace-panel {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--idp-code-bg);
+    border: 1px solid var(--idp-border);
+    border-radius: 4px;
+    font-family: var(--idp-font-mono);
+    font-size: 12px;
+}
+
+.function-call-item {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.function-call-item:last-child {
+    border-bottom: none;
+}
+
+.function-call-name {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.function-call-args {
+    color: var(--idp-text-muted);
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+.function-call-result {
+    color: var(--idp-text-dim);
+    font-size: 11px;
+    margin-top: 2px;
+    padding-left: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 600px;
+}

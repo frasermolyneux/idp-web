@@ -49,7 +49,47 @@
             <div class="chat-bubble-assistant">
                 <div class="chat-card">
                     <div class="chat-role">idp &gt;</div>
-                    @((MarkupString)Markdown.ToHtml(msg.Content, _markdownPipeline))
+                    @if (_agentEyeEnabled && _debugInfo.ContainsKey(index) && _debugInfo[index].Logprobs is not null)
+                    {
+                        <div class="agent-eye-overlay">
+                            @foreach (var tokenInfo in _debugInfo[index].Logprobs!)
+                            {
+                                var prob = Math.Exp(tokenInfo.Logprob);
+                                var colorClass = prob >= 0.9 ? "token-high" : prob >= 0.5 ? "token-medium" : "token-low";
+                                <span class="token-span @colorClass" title="@FormatTokenTooltip(tokenInfo)">@tokenInfo.Token</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @((MarkupString)Markdown.ToHtml(msg.Content, _markdownPipeline))
+                    }
+                    @if (_debugInfo.ContainsKey(index) && _debugInfo[index].FunctionCalls is not null)
+                    {
+                        <button class="debug-toggle" @onclick="() => ToggleFunctionTrace(index)">
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Wrench())" Style="width: 14px; height: 14px;" />
+                            @(_expandedFunctionTrace.Contains(index) ? "hide tool trace" : $"tool trace ({_debugInfo[index].FunctionCalls!.Count})")
+                        </button>
+                        @if (_expandedFunctionTrace.Contains(index))
+                        {
+                            <div class="function-trace-panel">
+                                @foreach (var fc in _debugInfo[index].FunctionCalls!.OrderBy(f => f.Order))
+                                {
+                                    <div class="function-call-item">
+                                        <span class="function-call-name">⚡ @fc.ToolName</span>
+                                        @if (fc.Arguments is not null && fc.Arguments.Count > 0)
+                                        {
+                                            <span class="function-call-args">(@string.Join(", ", fc.Arguments.Select(a => $"{a.Key}={a.Value}")))</span>
+                                        }
+                                        @if (fc.ResultPreview is not null)
+                                        {
+                                            <div class="function-call-result">→ @fc.ResultPreview</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
                     @if (_debugInfo.ContainsKey(index))
                     {
                         <button class="debug-toggle" @onclick="() => ToggleDebug(index)">
@@ -101,13 +141,20 @@
     </div>
     <div class="chat-input-hint">
         <span>Press Enter to send · Shift+Enter for new line</span>
-        @if (_totalRequests > 0)
-        {
-            <span class="token-summary">
-                <FluentIcon Value="@(new Icons.Regular.Size16.DataUsage())" Style="width: 12px; height: 12px; vertical-align: middle;" />
-                @_totalRequests requests · @_totalTokens tokens (@_totalPromptTokens prompt + @_totalCompletionTokens completion)
-            </span>
-        }
+        <span class="chat-controls">
+            <button class="agent-eye-toggle @(_agentEyeEnabled ? "active" : "")" @onclick="() => _agentEyeEnabled = !_agentEyeEnabled"
+                title="Toggle Agent Eye — view token probabilities and tool traces">
+                <FluentIcon Value="@(new Icons.Regular.Size16.Eye())" Style="width: 12px; height: 12px;" />
+                Agent Eye
+            </button>
+            @if (_totalRequests > 0)
+            {
+                <span class="token-summary">
+                    <FluentIcon Value="@(new Icons.Regular.Size16.DataUsage())" Style="width: 12px; height: 12px; vertical-align: middle;" />
+                    @_totalRequests requests · @_totalTokens tokens (@_totalPromptTokens prompt + @_totalCompletionTokens completion)
+                </span>
+            }
+        </span>
     </div>
 </div>
 
@@ -123,10 +170,12 @@
     private Dictionary<int, MessageDebugInfo> _debugInfo = new();
     private HashSet<int> _expandedDebug = new();
     private bool _preventEnter;
+    private bool _agentEyeEnabled;
     private int _totalRequests;
     private int _totalTokens;
     private int _totalPromptTokens;
     private int _totalCompletionTokens;
+    private HashSet<int> _expandedFunctionTrace = new();
 
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -203,7 +252,9 @@
             {
                 ResponseTimeMs = stopwatch.ElapsedMilliseconds,
                 Agent = response.Agent,
-                Usage = response.Usage
+                Usage = response.Usage,
+                Logprobs = response.Logprobs,
+                FunctionCalls = response.FunctionCalls
             };
 
             _totalRequests++;
@@ -253,10 +304,38 @@
         }
     }
 
+    private void ToggleFunctionTrace(int index)
+    {
+        if (!_expandedFunctionTrace.Remove(index))
+        {
+            _expandedFunctionTrace.Add(index);
+        }
+    }
+
+    private static string FormatTokenTooltip(TokenLogprobInfo token)
+    {
+        var prob = Math.Exp(token.Logprob);
+        var tooltip = $"Token: \"{token.Token}\"\nProbability: {prob:P1}\nLogprob: {token.Logprob:F4}";
+
+        if (token.TopAlternatives.Count > 0)
+        {
+            tooltip += "\n\nAlternatives:";
+            foreach (var alt in token.TopAlternatives.Take(5))
+            {
+                var altProb = Math.Exp(alt.Logprob);
+                tooltip += $"\n  \"{alt.Token}\" — {altProb:P1}";
+            }
+        }
+
+        return tooltip;
+    }
+
     private class MessageDebugInfo
     {
         public long ResponseTimeMs { get; set; }
         public string? Agent { get; set; }
         public TokenUsageInfo? Usage { get; set; }
+        public List<TokenLogprobInfo>? Logprobs { get; set; }
+        public List<FunctionCallInfo>? FunctionCalls { get; set; }
     }
 }

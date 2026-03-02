@@ -66,6 +66,58 @@ public class ChatApiService : IChatApiService
                 };
             }
 
+            if (root.TryGetProperty("logprobs", out var logprobsProp) && logprobsProp.ValueKind == JsonValueKind.Array)
+            {
+                apiResponse.Logprobs = new List<TokenLogprobInfo>();
+                foreach (var item in logprobsProp.EnumerateArray())
+                {
+                    var info = new TokenLogprobInfo
+                    {
+                        Token = item.TryGetProperty("token", out var tk) ? tk.GetString() ?? "" : "",
+                        Logprob = item.TryGetProperty("logprob", out var lp) ? lp.GetDouble() : 0
+                    };
+
+                    if (item.TryGetProperty("topAlternatives", out var altsProp) && altsProp.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var alt in altsProp.EnumerateArray())
+                        {
+                            info.TopAlternatives.Add(new TokenAlternativeInfo
+                            {
+                                Token = alt.TryGetProperty("token", out var at) ? at.GetString() ?? "" : "",
+                                Logprob = alt.TryGetProperty("logprob", out var al) ? al.GetDouble() : 0
+                            });
+                        }
+                    }
+
+                    apiResponse.Logprobs.Add(info);
+                }
+            }
+
+            if (root.TryGetProperty("functionCalls", out var fcProp) && fcProp.ValueKind == JsonValueKind.Array)
+            {
+                apiResponse.FunctionCalls = new List<FunctionCallInfo>();
+                foreach (var item in fcProp.EnumerateArray())
+                {
+                    var fc = new FunctionCallInfo
+                    {
+                        ToolName = item.TryGetProperty("toolName", out var tn) ? tn.GetString() ?? "" : "",
+                        ResultPreview = item.TryGetProperty("resultPreview", out var rp) ? rp.GetString() : null,
+                        Order = item.TryGetProperty("order", out var ord) ? ord.GetInt32() : 0
+                    };
+
+                    if (item.TryGetProperty("arguments", out var argsProp) && argsProp.ValueKind == JsonValueKind.Object)
+                    {
+                        fc.Arguments = new Dictionary<string, string>();
+                        foreach (var arg in argsProp.EnumerateObject())
+                        {
+                            fc.Arguments[arg.Name] = arg.Value.GetString() ?? "";
+                        }
+                    }
+
+                    apiResponse.FunctionCalls.Add(fc);
+                }
+            }
+
             return apiResponse;
         }
         catch (JsonException)
