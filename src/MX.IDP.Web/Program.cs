@@ -19,9 +19,6 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .EnableTokenAcquisitionToCallDownstreamApi(initialScopes)
     .AddInMemoryTokenCaches();
 
-builder.Services.AddControllersWithViews()
-    .AddMicrosoftIdentityUI();
-
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 
@@ -68,7 +65,6 @@ app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
 app.MapDefaultEndpoints();
 
 app.MapRazorComponents<App>()
