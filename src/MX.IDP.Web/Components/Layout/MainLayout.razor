@@ -1,10 +1,23 @@
 @inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
 
 <FluentLayout>
-    <FluentHeader>IDP</FluentHeader>
-    <FluentBodyContent>
-        <div class="content">
+    <FluentHeader>
+        <span style="font-weight: 600;">Internal Developer Platform</span>
+        <FluentSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <FluentLabel>@context.User.Identity?.Name</FluentLabel>
+            </Authorized>
+        </AuthorizeView>
+    </FluentHeader>
+    <FluentStack Orientation="Orientation.Horizontal" Style="height: calc(100vh - 50px);">
+        <FluentNavMenu Width="260" Title="Conversations">
+            <FluentNavLink Href="/" Icon="@(new Icons.Regular.Size20.Chat())">New Chat</FluentNavLink>
+        </FluentNavMenu>
+        <FluentBodyContent Style="flex: 1; overflow: auto;">
             @Body
-        </div>
-    </FluentBodyContent>
+        </FluentBodyContent>
+    </FluentStack>
 </FluentLayout>

@@ -1,6 +1,129 @@
 @page "/"
+@page "/chat/{ConversationId?}"
+@using MX.IDP.Web.Models
+@using MX.IDP.Web.Services
+@using Markdig
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IChatApiService ChatApi
+@inject IConversationService ConversationService
+@inject AuthenticationStateProvider AuthStateProvider
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
-<PageTitle>IDP</PageTitle>
+<PageTitle>IDP Chat</PageTitle>
 
-<h1>Internal Developer Platform</h1>
-<p>Chat interface coming soon.</p>
+<div style="display: flex; flex-direction: column; height: 100%; padding: 16px;">
+    <!-- Messages area -->
+    <div style="flex: 1; overflow-y: auto; padding-bottom: 16px;" @ref="_messagesContainer">
+        @if (_messages.Count == 0)
+        {
+            <div style="text-align: center; padding: 48px; color: var(--neutral-foreground-hint);">
+                <FluentIcon Value="@(new Icons.Regular.Size48.ChatSparkle())" />
+                <h2>How can I help?</h2>
+                <p>Ask about Azure resources, compliance, costs, or anything about the platform.</p>
+            </div>
+        }
+        @foreach (var msg in _messages)
+        {
+            <div style="margin-bottom: 16px; display: flex; @(msg.Role == "user" ? "justify-content: flex-end;" : "")">
+                <FluentCard Style="@(msg.Role == "user" ? "max-width: 70%; background: var(--accent-fill-rest); color: white;" : "max-width: 70%;")">
+                    @((MarkupString)Markdown.ToHtml(msg.Content, _markdownPipeline))
+                </FluentCard>
+            </div>
+        }
+        @if (_isLoading)
+        {
+            <div style="margin-bottom: 16px;">
+                <FluentCard Style="max-width: 70%;">
+                    <FluentProgressRing Style="width: 20px; height: 20px;" />
+                    <span style="margin-left: 8px;">Thinking...</span>
+                </FluentCard>
+            </div>
+        }
+    </div>
+
+    <!-- Input area -->
+    <div style="display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--neutral-stroke-divider-rest);">
+        <FluentTextArea @bind-Value="_userInput" Placeholder="Ask me anything..." Style="flex: 1;"
+            @onkeydown="HandleKeyDown" Disabled="_isLoading" Rows="1" Resize="TextAreaResize.Vertical" />
+        <FluentButton Appearance="Appearance.Accent" OnClick="SendMessage" Disabled="@(string.IsNullOrWhiteSpace(_userInput) || _isLoading)"
+            IconStart="@(new Icons.Regular.Size20.Send())">Send</FluentButton>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ConversationId { get; set; }
+
+    private List<ChatMessage> _messages = new();
+    private string? _userInput;
+    private bool _isLoading;
+    private string? _currentConversationId;
+    private string? _userId;
+    private ElementReference _messagesContainer;
+
+    private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _userId = authState.User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
+                ?? authState.User.FindFirst("oid")?.Value
+                ?? "anonymous";
+
+        if (!string.IsNullOrEmpty(ConversationId))
+        {
+            _currentConversationId = ConversationId;
+            _messages = await ConversationService.GetMessagesAsync(ConversationId);
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_userInput)) return;
+
+        var userMessage = new ChatMessage { Role = "user", Content = _userInput.Trim() };
+        _messages.Add(userMessage);
+        var messageText = _userInput.Trim();
+        _userInput = string.Empty;
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (_currentConversationId == null)
+            {
+                var conversation = await ConversationService.GetOrCreateConversationAsync(_userId!, null);
+                _currentConversationId = conversation.Id;
+
+                var title = messageText.Length > 50 ? messageText[..50] + "..." : messageText;
+                await ConversationService.UpdateConversationTitleAsync(_currentConversationId, title);
+            }
+
+            await ConversationService.SaveMessageAsync(_currentConversationId, userMessage);
+
+            var response = await ChatApi.SendMessageAsync(messageText, _currentConversationId, _messages);
+
+            var assistantMessage = new ChatMessage { Role = "assistant", Content = response };
+            _messages.Add(assistantMessage);
+            await ConversationService.SaveMessageAsync(_currentConversationId, assistantMessage);
+        }
+        catch (Exception ex)
+        {
+            _messages.Add(new ChatMessage { Role = "assistant", Content = $"Sorry, an error occurred: {ex.Message}" });
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessage();
+        }
+    }
+}
