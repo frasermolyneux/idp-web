@@ -116,11 +116,23 @@
         _userId = authState.User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
                 ?? authState.User.FindFirst("oid")?.Value
                 ?? "anonymous";
+    }
 
-        if (!string.IsNullOrEmpty(ConversationId))
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(ConversationId) && ConversationId != _currentConversationId)
         {
             _currentConversationId = ConversationId;
             _messages = await ConversationService.GetMessagesAsync(ConversationId);
+            _debugInfo.Clear();
+            _expandedDebug.Clear();
+        }
+        else if (string.IsNullOrEmpty(ConversationId) && _currentConversationId != null)
+        {
+            _currentConversationId = null;
+            _messages = new();
+            _debugInfo.Clear();
+            _expandedDebug.Clear();
         }
     }
 
