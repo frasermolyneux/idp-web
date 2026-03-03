@@ -47,6 +47,17 @@ builder.Services.AddHttpClient<IChatApiService, ChatApiService>(client =>
     client.Timeout = TimeSpan.FromMinutes(5);
 });
 
+// Configure CampaignApiService HttpClient
+builder.Services.AddHttpClient<ICampaignApiService, CampaignApiService>(client =>
+{
+    var baseUrl = builder.Configuration["IdpAgents:BaseUrl"];
+    if (!string.IsNullOrEmpty(baseUrl))
+    {
+        client.BaseAddress = new Uri(baseUrl);
+    }
+    client.Timeout = TimeSpan.FromMinutes(5);
+});
+
 // FluentUI
 builder.Services.AddFluentUIComponents();
 

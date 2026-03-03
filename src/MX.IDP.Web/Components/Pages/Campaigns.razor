@@ -1,0 +1,210 @@
+@page "/campaigns"
+@using Microsoft.AspNetCore.Authorization
+@using MX.IDP.Web.Services
+@attribute [Authorize]
+@inject ICampaignApiService CampaignApi
+@inject NavigationManager Navigation
+
+<div class="campaigns-container">
+    <div class="campaigns-header">
+        <h2 style="margin: 0; color: #e0e0e0;">📋 Campaigns</h2>
+        <button class="btn-accent" @onclick="ShowCreateForm">+ New Campaign</button>
+    </div>
+
+    @if (_showCreate)
+    {
+        <div class="campaign-create-form">
+            <h3 style="color: #e0e0e0; margin-top: 0;">Create Campaign</h3>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" @bind="_newName" placeholder="e.g., Fix high-impact security findings" />
+            </div>
+            <div class="form-group">
+                <label>Source Type</label>
+                <select @bind="_newSourceType">
+                    <option value="advisor">Azure Advisor</option>
+                    <option value="policy">Azure Policy</option>
+                    <option value="dev_standards">Development Standards</option>
+                    <option value="repo_config">Repository Configuration</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" @bind="_newDescription" placeholder="Optional description" />
+            </div>
+            <div class="form-actions">
+                <button class="btn-accent" @onclick="CreateCampaign" disabled="@_creating">
+                    @(_creating ? "Creating..." : "Create")
+                </button>
+                <button class="btn-secondary" @onclick="() => _showCreate = false">Cancel</button>
+            </div>
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <p style="color: #888;">Loading campaigns...</p>
+    }
+    else if (_campaigns.Count == 0)
+    {
+        <p style="color: #888;">No campaigns yet. Create one to get started.</p>
+    }
+    else
+    {
+        <div class="campaigns-list">
+            @foreach (var c in _campaigns)
+            {
+                <div class="campaign-card" @onclick="() => SelectCampaign(c)">
+                    <div class="campaign-card-header">
+                        <span class="campaign-name">@c.Name</span>
+                        <span class="campaign-status status-@c.Status.ToLower()">@c.Status</span>
+                    </div>
+                    <div class="campaign-card-meta">
+                        <span class="source-badge">@FormatSourceType(c.SourceType)</span>
+                        <span style="color: #666;">|</span>
+                        <span style="color: #888;">@c.Stats.TotalFindings findings</span>
+                        <span style="color: #666;">|</span>
+                        <span style="color: #4ade80;">@c.Stats.IssuesClosed closed</span>
+                        <span style="color: #666;">|</span>
+                        <span style="color: #facc15;">@c.Stats.IssuesOpen open</span>
+                    </div>
+                    @if (c.Stats.TotalFindings > 0)
+                    {
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: @(c.Stats.ProgressPercent)%"></div>
+                        </div>
+                        <span style="color: #888; font-size: 12px;">@c.Stats.ProgressPercent% complete</span>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (_selectedCampaign is not null)
+    {
+        <div class="campaign-detail">
+            <div class="detail-header">
+                <h3 style="color: #e0e0e0; margin: 0;">@_selectedCampaign.Name</h3>
+                <div class="detail-actions">
+                    <button class="btn-accent" @onclick="RunSelected" disabled="@(_running || _selectedCampaign.Status == "running")">
+                        @(_running ? "Running..." : "▶ Run")
+                    </button>
+                </div>
+            </div>
+            <p style="color: #888;">@_selectedCampaign.Description</p>
+
+            @if (_findings.Count > 0)
+            {
+                <table class="findings-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Severity</th>
+                            <th>Repo</th>
+                            <th>Status</th>
+                            <th>Issue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var f in _findings)
+                        {
+                            <tr>
+                                <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">@f.Title</td>
+                                <td><span class="severity-@f.Severity.ToLower()">@f.Severity</span></td>
+                                <td style="color: #0ea5e9;">@(f.Repo ?? "—")</td>
+                                <td><span class="finding-status-@f.Status">@f.Status</span></td>
+                                <td>
+                                    @if (f.IssueUrl is not null)
+                                    {
+                                        <a href="@f.IssueUrl" target="_blank" style="color: #0ea5e9;">#@f.IssueNumber</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p style="color: #666;">No findings yet. Run the campaign to scan.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<CampaignSummary> _campaigns = [];
+    private List<CampaignFindingSummary> _findings = [];
+    private CampaignSummary? _selectedCampaign;
+    private bool _loading = true;
+    private bool _showCreate;
+    private bool _creating;
+    private bool _running;
+    private string _newName = "";
+    private string _newSourceType = "advisor";
+    private string? _newDescription;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCampaigns();
+    }
+
+    private async Task LoadCampaigns()
+    {
+        _loading = true;
+        try { _campaigns = await CampaignApi.ListCampaignsAsync(); }
+        catch { _campaigns = []; }
+        _loading = false;
+    }
+
+    private void ShowCreateForm() => _showCreate = true;
+
+    private async Task CreateCampaign()
+    {
+        if (string.IsNullOrWhiteSpace(_newName)) return;
+        _creating = true;
+        try
+        {
+            await CampaignApi.CreateCampaignAsync(new CreateCampaignRequest
+            {
+                Name = _newName,
+                SourceType = _newSourceType,
+                Description = _newDescription
+            });
+            _showCreate = false;
+            _newName = "";
+            _newDescription = null;
+            await LoadCampaigns();
+        }
+        finally { _creating = false; }
+    }
+
+    private async Task SelectCampaign(CampaignSummary campaign)
+    {
+        _selectedCampaign = campaign;
+        try { _findings = await CampaignApi.GetFindingsAsync(campaign.Id); }
+        catch { _findings = []; }
+    }
+
+    private async Task RunSelected()
+    {
+        if (_selectedCampaign is null) return;
+        _running = true;
+        try
+        {
+            _selectedCampaign = await CampaignApi.RunCampaignAsync(_selectedCampaign.Id);
+            _findings = await CampaignApi.GetFindingsAsync(_selectedCampaign.Id);
+            await LoadCampaigns();
+        }
+        finally { _running = false; }
+    }
+
+    private static string FormatSourceType(string sourceType) => sourceType switch
+    {
+        "advisor" => "🔍 Advisor",
+        "policy" => "📜 Policy",
+        "dev_standards" => "⚙️ Dev Standards",
+        "repo_config" => "📁 Repo Config",
+        _ => sourceType
+    };
+}
