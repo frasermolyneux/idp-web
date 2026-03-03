@@ -13,7 +13,13 @@ public interface ICampaignApiService
     Task<List<CampaignFindingSummary>> GetPendingApprovalsAsync(string campaignId);
     Task<CampaignSummary> CreateCampaignAsync(CreateCampaignRequest request);
     Task<CampaignSummary> RunCampaignAsync(string campaignId);
+    Task<CampaignSummary> PreviewCampaignAsync(string campaignId);
+    Task<CampaignSummary> PauseCampaignAsync(string campaignId);
+    Task<CampaignSummary> ResumeCampaignAsync(string campaignId);
+    Task<CampaignSummary> CancelCampaignAsync(string campaignId);
+    Task DeleteCampaignAsync(string campaignId);
     Task<List<CampaignTemplateSummary>> ListTemplatesAsync();
+    Task<CampaignSummary> CreateFromTemplateAsync(string templateId, string? name = null);
     Task ApproveFindingAsync(string campaignId, string findingId);
     Task RejectFindingAsync(string campaignId, string findingId);
     Task BulkApproveAsync(string campaignId);
@@ -131,6 +137,64 @@ public class CampaignApiService : ICampaignApiService
         await AttachBearerTokenAsync();
         var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/findings/reject-all", null);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<CampaignSummary> PreviewCampaignAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/run?userId=system&dryRun=true", null);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<CampaignSummary>(json, JsonOptions)!;
+    }
+
+    public async Task<CampaignSummary> PauseCampaignAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/pause?userId=system", null);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<CampaignSummary>(json, JsonOptions)!;
+    }
+
+    public async Task<CampaignSummary> ResumeCampaignAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/resume?userId=system", null);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<CampaignSummary>(json, JsonOptions)!;
+    }
+
+    public async Task<CampaignSummary> CancelCampaignAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/cancel?userId=system", null);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<CampaignSummary>(json, JsonOptions)!;
+    }
+
+    public async Task DeleteCampaignAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.DeleteAsync($"/api/campaigns/{campaignId}?userId=system");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<CampaignSummary> CreateFromTemplateAsync(string templateId, string? name = null)
+    {
+        await AttachBearerTokenAsync();
+        var templates = await ListTemplatesAsync();
+        var template = templates.FirstOrDefault(t => t.Id == templateId);
+        if (template is null) throw new InvalidOperationException($"Template '{templateId}' not found");
+
+        return await CreateCampaignAsync(new CreateCampaignRequest
+        {
+            Name = name ?? template.Name,
+            SourceType = template.SourceType,
+            Description = template.Description
+        });
     }
 }
 

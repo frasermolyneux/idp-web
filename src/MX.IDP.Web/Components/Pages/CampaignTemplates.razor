@@ -7,13 +7,29 @@
 
 <div class="campaigns-container">
     <div class="campaigns-header">
-        <h2 style="margin: 0; color: #e0e0e0;">📋 Campaign Templates</h2>
+        <div>
+            <h2 style="margin: 0 0 4px; color: #e0e0e0;">📋 Campaign Templates</h2>
+            <p style="margin: 0; color: #888; font-size: 13px;">Pre-built campaigns for common scenarios. Pick a template to get started quickly.</p>
+        </div>
         <a href="/campaigns" class="btn-secondary" style="text-decoration: none;">← Back to Campaigns</a>
     </div>
 
+    @if (!string.IsNullOrEmpty(_statusMessage))
+    {
+        <div class="campaign-alert @_statusClass">@_statusMessage</div>
+    }
+
     @if (_loading)
     {
-        <p style="color: #888;">Loading templates...</p>
+        <p style="color: #888; text-align: center; padding: 40px;">Loading templates...</p>
+    }
+    else if (_templates.Count == 0)
+    {
+        <div class="campaign-empty-state">
+            <div style="font-size: 48px; margin-bottom: 12px;">📋</div>
+            <h3 style="color: #e0e0e0; margin: 0 0 8px;">No templates available</h3>
+            <p style="color: #888;">Templates are defined in the backend. Check the API connection.</p>
+        </div>
     }
     else
     {
@@ -31,12 +47,14 @@
             @foreach (var template in FilteredTemplates)
             {
                 <div class="template-card">
-                    <div class="template-icon">@template.Icon</div>
-                    <h3 style="color: #e0e0e0; margin: 8px 0 4px;">@template.Name</h3>
-                    <span class="source-badge">@template.SourceType</span>
-                    <p style="color: #888; font-size: 13px; margin: 8px 0;">@template.Description</p>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="template-icon">@template.Icon</div>
+                        <span class="source-badge">@FormatSourceType(template.SourceType)</span>
+                    </div>
+                    <h3 style="color: #e0e0e0; margin: 10px 0 4px; font-size: 15px;">@template.Name</h3>
+                    <p style="color: #888; font-size: 13px; margin: 0 0 12px; line-height: 1.5; min-height: 40px;">@template.Description</p>
                     <button class="btn-accent" style="width: 100%;" @onclick="() => CreateFromTemplate(template)" disabled="@_creating">
-                        @(_creatingId == template.Id ? "Creating..." : "Use Template")
+                        @(_creatingId == template.Id ? "Creating..." : "Use Template →")
                     </button>
                 </div>
             }
@@ -51,6 +69,8 @@
     private bool _loading = true;
     private bool _creating;
     private string? _creatingId;
+    private string? _statusMessage;
+    private string _statusClass = "";
 
     private IEnumerable<CampaignTemplateSummary> FilteredTemplates =>
         _selectedCategory == "all" ? _templates : _templates.Where(t => t.Category == _selectedCategory);
@@ -70,13 +90,17 @@
         _creatingId = template.Id;
         try
         {
-            await CampaignApi.CreateCampaignAsync(new CreateCampaignRequest
-            {
-                Name = template.Name,
-                SourceType = template.SourceType,
-                Description = template.Description
-            });
+            await CampaignApi.CreateFromTemplateAsync(template.Id);
+            _statusMessage = $"Campaign '{template.Name}' created — redirecting...";
+            _statusClass = "success";
+            StateHasChanged();
+            await Task.Delay(800);
             Navigation.NavigateTo("/campaigns");
+        }
+        catch
+        {
+            _statusMessage = "Failed to create campaign from template";
+            _statusClass = "error";
         }
         finally
         {
@@ -93,5 +117,17 @@
         "compliance" => "📜 Compliance",
         "hygiene" => "🧹 Hygiene",
         _ => category
+    };
+
+    private static string FormatSourceType(string sourceType) => sourceType switch
+    {
+        "advisor" => "Advisor",
+        "policy" => "Policy",
+        "dev_standards" => "Dev Standards",
+        "repo_config" => "Repo Config",
+        "dependabot" => "Dependabot",
+        "codeql" => "CodeQL",
+        "kql" => "KQL",
+        _ => sourceType
     };
 }

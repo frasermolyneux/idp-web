@@ -7,37 +7,58 @@
 
 <div class="campaigns-container">
     <div class="campaigns-header">
-        <h2 style="margin: 0; color: #e0e0e0;">📋 Campaigns</h2>
-        <button class="btn-accent" @onclick="ShowCreateForm">+ New Campaign</button>
+        <div>
+            <h2 style="margin: 0 0 4px; color: #e0e0e0;">📋 Campaigns</h2>
+            <p style="margin: 0; color: #888; font-size: 13px;">Systematically scan, preview, and remediate issues across your repositories and infrastructure.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="/campaigns/templates" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📋 Templates</a>
+            <button class="btn-accent" @onclick="ShowCreateForm">+ New Campaign</button>
+        </div>
     </div>
+
+    @if (!string.IsNullOrEmpty(_statusMessage))
+    {
+        <div class="campaign-alert @_statusClass">@_statusMessage</div>
+    }
 
     @if (_showCreate)
     {
         <div class="campaign-create-form">
-            <h3 style="color: #e0e0e0; margin-top: 0;">Create Campaign</h3>
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" @bind="_newName" placeholder="e.g., Fix high-impact security findings" />
+            <div class="create-form-header">
+                <h3 style="color: #e0e0e0; margin: 0;">Create Campaign</h3>
+                <button class="btn-icon" @onclick="() => _showCreate = false" title="Close">✕</button>
             </div>
-            <div class="form-group">
-                <label>Source Type</label>
-                <select @bind="_newSourceType">
-                    <option value="advisor">Azure Advisor</option>
-                    <option value="policy">Azure Policy</option>
-                    <option value="dev_standards">Development Standards</option>
-                    <option value="repo_config">Repository Configuration</option>
-                    <option value="dependabot">Dependabot Alerts</option>
-                    <option value="codeql">CodeQL Findings</option>
-                    <option value="kql">Custom KQL Query</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <input type="text" @bind="_newDescription" placeholder="Optional description" />
+            <p style="color: #888; font-size: 13px; margin: 4px 0 16px;">
+                A campaign scans a data source for findings, deduplicates them, and can create GitHub issues for remediation.
+                You can preview findings before running for real.
+            </p>
+            <div class="create-form-grid">
+                <div class="form-group">
+                    <label>Campaign Name</label>
+                    <input type="text" @bind="_newName" placeholder="e.g., Fix high-impact security findings" />
+                </div>
+                <div class="form-group">
+                    <label>Source Type</label>
+                    <select @bind="_newSourceType">
+                        <option value="advisor">🔍 Azure Advisor</option>
+                        <option value="policy">📜 Azure Policy</option>
+                        <option value="dev_standards">⚙️ Development Standards</option>
+                        <option value="repo_config">📁 Repository Configuration</option>
+                        <option value="dependabot">📦 Dependabot Alerts</option>
+                        <option value="codeql">🔒 CodeQL Findings</option>
+                        <option value="kql">📊 Custom KQL Query</option>
+                    </select>
+                    <span class="form-hint">@GetSourceTypeHint(_newSourceType)</span>
+                </div>
+                <div class="form-group form-full">
+                    <label>Description <span style="color: #666;">(optional)</span></label>
+                    <input type="text" @bind="_newDescription" placeholder="What this campaign is scanning for" />
+                </div>
             </div>
             <div class="form-actions">
-                <button class="btn-accent" @onclick="CreateCampaign" disabled="@_creating">
-                    @(_creating ? "Creating..." : "Create")
+                <button class="btn-accent" @onclick="CreateCampaign" disabled="@(_creating || string.IsNullOrWhiteSpace(_newName))">
+                    @(_creating ? "Creating..." : "Create Campaign")
                 </button>
                 <button class="btn-secondary" @onclick="() => _showCreate = false">Cancel</button>
             </div>
@@ -46,30 +67,44 @@
 
     @if (_loading)
     {
-        <p style="color: #888;">Loading campaigns...</p>
+        <p style="color: #888; text-align: center; padding: 40px;">Loading campaigns...</p>
     }
     else if (_campaigns.Count == 0)
     {
-        <p style="color: #888;">No campaigns yet. Create one to get started.</p>
+        <div class="campaign-empty-state">
+            <div style="font-size: 48px; margin-bottom: 12px;">📋</div>
+            <h3 style="color: #e0e0e0; margin: 0 0 8px;">No campaigns yet</h3>
+            <p style="color: #888; margin: 0 0 16px; max-width: 400px;">
+                Campaigns help you systematically find and fix issues. Create one from scratch or use a pre-built template.
+            </p>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+                <button class="btn-accent" @onclick="ShowCreateForm">+ Create Campaign</button>
+                <a href="/campaigns/templates" class="btn-secondary" style="text-decoration: none;">Browse Templates</a>
+            </div>
+        </div>
     }
     else
     {
         <div class="campaigns-list">
             @foreach (var c in _campaigns)
             {
-                <div class="campaign-card" @onclick="() => SelectCampaign(c)">
+                <div class="campaign-card @(c == _selectedCampaign ? "selected" : "")" @onclick="() => SelectCampaign(c)">
                     <div class="campaign-card-header">
                         <span class="campaign-name">@c.Name</span>
                         <span class="campaign-status status-@c.Status.ToLower()">@c.Status</span>
                     </div>
                     <div class="campaign-card-meta">
                         <span class="source-badge">@FormatSourceType(c.SourceType)</span>
-                        <span style="color: #666;">|</span>
-                        <span style="color: #888;">@c.Stats.TotalFindings findings</span>
-                        <span style="color: #666;">|</span>
-                        <span style="color: #4ade80;">@c.Stats.IssuesClosed closed</span>
-                        <span style="color: #666;">|</span>
-                        <span style="color: #facc15;">@c.Stats.IssuesOpen open</span>
+                        @if (c.Stats.TotalFindings > 0)
+                        {
+                            <span style="color: #888;">@c.Stats.TotalFindings findings</span>
+                            <span style="color: #4ade80;">@c.Stats.IssuesClosed resolved</span>
+                            <span style="color: #facc15;">@c.Stats.IssuesOpen open</span>
+                        }
+                        @if (c.LastRunAt.HasValue)
+                        {
+                            <span style="color: #666; margin-left: auto; font-size: 12px;">Last run: @c.LastRunAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                        }
                     </div>
                     @if (c.Stats.TotalFindings > 0)
                     {
@@ -87,49 +122,91 @@
     {
         <div class="campaign-detail">
             <div class="detail-header">
-                <h3 style="color: #e0e0e0; margin: 0;">@_selectedCampaign.Name</h3>
+                <div>
+                    <h3 style="color: #e0e0e0; margin: 0;">@_selectedCampaign.Name</h3>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <span class="campaign-status status-@_selectedCampaign.Status.ToLower()">@_selectedCampaign.Status</span>
+                        <span class="source-badge">@FormatSourceType(_selectedCampaign.SourceType)</span>
+                    </div>
+                </div>
                 <div class="detail-actions">
-                    <button class="btn-accent" @onclick="RunSelected" disabled="@(_running || _selectedCampaign.Status == "running")">
-                        @(_running ? "Running..." : "▶ Run")
-                    </button>
+                    @* Contextual actions based on status *@
+                    @if (_selectedCampaign.Status is "created")
+                    {
+                        <button class="btn-preview" @onclick="PreviewSelected" disabled="@_actionInProgress">
+                            @(_actionInProgress ? "..." : "👁 Preview")
+                        </button>
+                        <button class="btn-accent" @onclick="RunSelected" disabled="@_actionInProgress">
+                            @(_actionInProgress ? "..." : "▶ Run")
+                        </button>
+                        <button class="btn-danger" @onclick="DeleteSelected" disabled="@_actionInProgress">🗑</button>
+                    }
+                    else if (_selectedCampaign.Status is "running" or "previewing")
+                    {
+                        <button class="btn-secondary" @onclick="PauseSelected" disabled="@_actionInProgress">⏸ Pause</button>
+                        <button class="btn-danger" @onclick="CancelSelected" disabled="@_actionInProgress">✕ Cancel</button>
+                    }
+                    else if (_selectedCampaign.Status is "paused")
+                    {
+                        <button class="btn-accent" @onclick="ResumeSelected" disabled="@_actionInProgress">▶ Resume</button>
+                        <button class="btn-danger" @onclick="CancelSelected" disabled="@_actionInProgress">✕ Cancel</button>
+                    }
+                    else @* completed, failed, cancelled *@
+                    {
+                        <button class="btn-accent" @onclick="RunSelected" disabled="@_actionInProgress">🔄 Re-run</button>
+                        <button class="btn-danger" @onclick="DeleteSelected" disabled="@_actionInProgress">🗑 Delete</button>
+                    }
                 </div>
             </div>
-            <p style="color: #888;">@_selectedCampaign.Description</p>
+
+            @if (!string.IsNullOrEmpty(_selectedCampaign.Description))
+            {
+                <p style="color: #888; margin: 8px 0 0; font-size: 13px;">@_selectedCampaign.Description</p>
+            }
 
             @if (_findings.Count > 0)
             {
-                <table class="findings-table">
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Severity</th>
-                            <th>Repo</th>
-                            <th>Status</th>
-                            <th>Issue</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var f in _findings)
-                        {
+                <div style="margin-top: 16px;">
+                    @if (_findings.Any(f => f.Status == "preview"))
+                    {
+                        <div class="preview-banner">
+                            <span>👁 Preview — @_findings.Count(f => f.Status == "preview") findings would be created as issues. No changes have been made yet.</span>
+                            <button class="btn-accent btn-sm" @onclick="RunSelected" disabled="@_actionInProgress">▶ Run for Real</button>
+                        </div>
+                    }
+                    <table class="findings-table">
+                        <thead>
                             <tr>
-                                <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">@f.Title</td>
-                                <td><span class="severity-@f.Severity.ToLower()">@f.Severity</span></td>
-                                <td style="color: #0ea5e9;">@(f.Repo ?? "—")</td>
-                                <td><span class="finding-status-@f.Status">@f.Status</span></td>
-                                <td>
-                                    @if (f.IssueUrl is not null)
-                                    {
-                                        <a href="@f.IssueUrl" target="_blank" style="color: #0ea5e9;">#@f.IssueNumber</a>
-                                    }
-                                </td>
+                                <th>Title</th>
+                                <th>Severity</th>
+                                <th>Repo</th>
+                                <th>Status</th>
+                                <th>Issue</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in _findings)
+                            {
+                                <tr>
+                                    <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">@f.Title</td>
+                                    <td><span class="severity-@f.Severity.ToLower()">@f.Severity</span></td>
+                                    <td style="color: #0ea5e9;">@(f.Repo ?? "—")</td>
+                                    <td><span class="finding-status-@f.Status">@FormatFindingStatus(f.Status)</span></td>
+                                    <td>
+                                        @if (f.IssueUrl is not null)
+                                        {
+                                            <a href="@f.IssueUrl" target="_blank" style="color: #0ea5e9;">#@f.IssueNumber</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
             else
             {
-                <p style="color: #666;">No findings yet. Run the campaign to scan.</p>
+                <p style="color: #666; margin-top: 16px;">No findings yet. Preview or run the campaign to scan.</p>
             }
         </div>
     }
@@ -142,10 +219,12 @@
     private bool _loading = true;
     private bool _showCreate;
     private bool _creating;
-    private bool _running;
+    private bool _actionInProgress;
     private string _newName = "";
     private string _newSourceType = "advisor";
     private string? _newDescription;
+    private string? _statusMessage;
+    private string _statusClass = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,6 +241,13 @@
 
     private void ShowCreateForm() => _showCreate = true;
 
+    private void ShowStatus(string message, bool success = true)
+    {
+        _statusMessage = message;
+        _statusClass = success ? "success" : "error";
+        _ = Task.Delay(4000).ContinueWith(_ => { _statusMessage = null; InvokeAsync(StateHasChanged); });
+    }
+
     private async Task CreateCampaign()
     {
         if (string.IsNullOrWhiteSpace(_newName)) return;
@@ -177,8 +263,10 @@
             _showCreate = false;
             _newName = "";
             _newDescription = null;
+            ShowStatus("Campaign created successfully");
             await LoadCampaigns();
         }
+        catch { ShowStatus("Failed to create campaign", false); }
         finally { _creating = false; }
     }
 
@@ -192,14 +280,90 @@
     private async Task RunSelected()
     {
         if (_selectedCampaign is null) return;
-        _running = true;
+        _actionInProgress = true;
         try
         {
             _selectedCampaign = await CampaignApi.RunCampaignAsync(_selectedCampaign.Id);
             _findings = await CampaignApi.GetFindingsAsync(_selectedCampaign.Id);
+            ShowStatus($"Campaign run completed — {_findings.Count} findings");
             await LoadCampaigns();
         }
-        finally { _running = false; }
+        catch { ShowStatus("Campaign run failed", false); }
+        finally { _actionInProgress = false; }
+    }
+
+    private async Task PreviewSelected()
+    {
+        if (_selectedCampaign is null) return;
+        _actionInProgress = true;
+        try
+        {
+            _selectedCampaign = await CampaignApi.PreviewCampaignAsync(_selectedCampaign.Id);
+            _findings = await CampaignApi.GetFindingsAsync(_selectedCampaign.Id);
+            ShowStatus($"Preview complete — {_findings.Count(f => f.Status == "preview")} findings would be created");
+            await LoadCampaigns();
+        }
+        catch { ShowStatus("Preview failed", false); }
+        finally { _actionInProgress = false; }
+    }
+
+    private async Task PauseSelected()
+    {
+        if (_selectedCampaign is null) return;
+        _actionInProgress = true;
+        try
+        {
+            _selectedCampaign = await CampaignApi.PauseCampaignAsync(_selectedCampaign.Id);
+            ShowStatus("Campaign paused");
+            await LoadCampaigns();
+        }
+        catch { ShowStatus("Failed to pause", false); }
+        finally { _actionInProgress = false; }
+    }
+
+    private async Task ResumeSelected()
+    {
+        if (_selectedCampaign is null) return;
+        _actionInProgress = true;
+        try
+        {
+            _selectedCampaign = await CampaignApi.ResumeCampaignAsync(_selectedCampaign.Id);
+            _findings = await CampaignApi.GetFindingsAsync(_selectedCampaign.Id);
+            ShowStatus("Campaign resumed and completed");
+            await LoadCampaigns();
+        }
+        catch { ShowStatus("Failed to resume", false); }
+        finally { _actionInProgress = false; }
+    }
+
+    private async Task CancelSelected()
+    {
+        if (_selectedCampaign is null) return;
+        _actionInProgress = true;
+        try
+        {
+            _selectedCampaign = await CampaignApi.CancelCampaignAsync(_selectedCampaign.Id);
+            ShowStatus("Campaign cancelled");
+            await LoadCampaigns();
+        }
+        catch { ShowStatus("Failed to cancel", false); }
+        finally { _actionInProgress = false; }
+    }
+
+    private async Task DeleteSelected()
+    {
+        if (_selectedCampaign is null) return;
+        _actionInProgress = true;
+        try
+        {
+            await CampaignApi.DeleteCampaignAsync(_selectedCampaign.Id);
+            _selectedCampaign = null;
+            _findings = [];
+            ShowStatus("Campaign deleted");
+            await LoadCampaigns();
+        }
+        catch { ShowStatus("Failed to delete", false); }
+        finally { _actionInProgress = false; }
     }
 
     private static string FormatSourceType(string sourceType) => sourceType switch
@@ -212,5 +376,25 @@
         "codeql" => "🔒 CodeQL",
         "kql" => "📊 KQL",
         _ => sourceType
+    };
+
+    private static string GetSourceTypeHint(string sourceType) => sourceType switch
+    {
+        "advisor" => "Scans Azure Advisor for cost, security, reliability, and performance recommendations",
+        "policy" => "Scans Azure Policy for non-compliant resources across subscriptions",
+        "dev_standards" => "Checks branch protection, required status checks, and issues settings",
+        "repo_config" => "Checks repo descriptions, topics, default branch, and merge settings",
+        "dependabot" => "Scans all repos for open Dependabot security vulnerability alerts",
+        "codeql" => "Scans all repos for open CodeQL static analysis findings",
+        "kql" => "Runs a custom Azure Resource Graph KQL query to find resources",
+        _ => ""
+    };
+
+    private static string FormatFindingStatus(string status) => status switch
+    {
+        "issue_created" => "Issue Created",
+        "pending_approval" => "Pending Approval",
+        "preview" => "Preview",
+        _ => char.ToUpper(status[0]) + status[1..]
     };
 }
