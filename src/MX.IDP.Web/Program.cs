@@ -43,6 +43,8 @@ builder.Services.AddHttpClient<IChatApiService, ChatApiService>(client =>
     {
         client.BaseAddress = new Uri(baseUrl);
     }
+    // Chat completions with multi-step tool calling need generous timeouts
+    client.Timeout = TimeSpan.FromMinutes(5);
 });
 
 // FluentUI
