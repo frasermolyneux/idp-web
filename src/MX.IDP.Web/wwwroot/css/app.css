@@ -646,3 +646,59 @@ html, body {
 .finding-status-open { color: #facc15; }
 .finding-status-resolved { color: #4ade80; }
 .finding-status-new { color: #38bdf8; }
+.finding-status-stale { color: #f97316; }
+.finding-status-pending_approval { color: #c084fc; }
+.finding-status-dismissed { color: #6b7280; }
+
+/* Template page */
+.template-categories {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.category-tab {
+    background: var(--idp-bg-tertiary);
+    color: var(--idp-text-muted);
+    border: 1px solid var(--idp-border);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.category-tab.active {
+    background: var(--idp-accent);
+    color: #fff;
+    border-color: var(--idp-accent);
+}
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+.template-card {
+    background: var(--idp-bg-secondary);
+    border: 1px solid var(--idp-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+.template-icon { font-size: 28px; }
+
+/* Approval buttons */
+.btn-sm-approve {
+    background: #14532d;
+    color: #4ade80;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 4px;
+}
+.btn-sm-reject {
+    background: #451a1a;
+    color: #f87171;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}

@@ -1,0 +1,152 @@
+@page "/campaigns/approvals"
+@using Microsoft.AspNetCore.Authorization
+@using MX.IDP.Web.Services
+@attribute [Authorize]
+@inject ICampaignApiService CampaignApi
+
+<div class="campaigns-container">
+    <div class="campaigns-header">
+        <h2 style="margin: 0; color: #e0e0e0;">✅ Approval Queue</h2>
+        <a href="/campaigns" class="btn-secondary" style="text-decoration: none;">← Back to Campaigns</a>
+    </div>
+
+    @if (_loading)
+    {
+        <p style="color: #888;">Loading campaigns...</p>
+    }
+    else if (_campaigns.Count == 0)
+    {
+        <p style="color: #888;">No campaigns found.</p>
+    }
+    else
+    {
+        var hasPending = false;
+        @foreach (var campaign in _campaigns)
+        {
+            var pending = _pendingByCampaign.GetValueOrDefault(campaign.Id, []);
+            if (pending.Count == 0) continue;
+            hasPending = true;
+
+            <div class="campaign-detail" style="margin-bottom: 16px;">
+                <div class="detail-header">
+                    <div>
+                        <h3 style="color: #e0e0e0; margin: 0;">@campaign.Name</h3>
+                        <span style="color: #888; font-size: 13px;">@pending.Count pending approvals</span>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn-accent" @onclick="() => BulkApprove(campaign.Id)" disabled="@_processing">✓ Approve All</button>
+                        <button class="btn-secondary" @onclick="() => BulkReject(campaign.Id)" disabled="@_processing">✗ Reject All</button>
+                    </div>
+                </div>
+                <table class="findings-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Severity</th>
+                            <th>Repo</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var finding in pending)
+                        {
+                            <tr>
+                                <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">@finding.Title</td>
+                                <td><span class="severity-@finding.Severity.ToLower()">@finding.Severity</span></td>
+                                <td style="color: #0ea5e9;">@(finding.Repo ?? "—")</td>
+                                <td>
+                                    <button class="btn-sm-approve" @onclick="() => Approve(campaign.Id, finding)" disabled="@_processing">✓</button>
+                                    <button class="btn-sm-reject" @onclick="() => Reject(campaign.Id, finding)" disabled="@_processing">✗</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (!hasPending)
+        {
+            <p style="color: #4ade80;">🎉 No pending approvals — all clear!</p>
+        }
+    }
+</div>
+
+@code {
+    private List<CampaignSummary> _campaigns = [];
+    private Dictionary<string, List<CampaignFindingSummary>> _pendingByCampaign = [];
+    private bool _loading = true;
+    private bool _processing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _campaigns = await CampaignApi.ListCampaignsAsync();
+            _pendingByCampaign = new Dictionary<string, List<CampaignFindingSummary>>();
+            foreach (var campaign in _campaigns)
+            {
+                try
+                {
+                    var pending = await CampaignApi.GetPendingApprovalsAsync(campaign.Id);
+                    if (pending.Count > 0) _pendingByCampaign[campaign.Id] = pending;
+                }
+                catch { /* skip */ }
+            }
+        }
+        catch { _campaigns = []; }
+        _loading = false;
+    }
+
+    private async Task Approve(string campaignId, CampaignFindingSummary finding)
+    {
+        _processing = true;
+        try
+        {
+            await CampaignApi.ApproveFindingAsync(campaignId, finding.Id);
+            if (_pendingByCampaign.TryGetValue(campaignId, out var list))
+                list.Remove(finding);
+        }
+        finally { _processing = false; }
+    }
+
+    private async Task Reject(string campaignId, CampaignFindingSummary finding)
+    {
+        _processing = true;
+        try
+        {
+            await CampaignApi.RejectFindingAsync(campaignId, finding.Id);
+            if (_pendingByCampaign.TryGetValue(campaignId, out var list))
+                list.Remove(finding);
+        }
+        finally { _processing = false; }
+    }
+
+    private async Task BulkApprove(string campaignId)
+    {
+        _processing = true;
+        try
+        {
+            await CampaignApi.BulkApproveAsync(campaignId);
+            _pendingByCampaign.Remove(campaignId);
+        }
+        finally { _processing = false; }
+    }
+
+    private async Task BulkReject(string campaignId)
+    {
+        _processing = true;
+        try
+        {
+            await CampaignApi.BulkRejectAsync(campaignId);
+            _pendingByCampaign.Remove(campaignId);
+        }
+        finally { _processing = false; }
+    }
+}

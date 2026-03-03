@@ -10,8 +10,14 @@ public interface ICampaignApiService
     Task<List<CampaignSummary>> ListCampaignsAsync();
     Task<CampaignSummary?> GetCampaignAsync(string campaignId);
     Task<List<CampaignFindingSummary>> GetFindingsAsync(string campaignId);
+    Task<List<CampaignFindingSummary>> GetPendingApprovalsAsync(string campaignId);
     Task<CampaignSummary> CreateCampaignAsync(CreateCampaignRequest request);
     Task<CampaignSummary> RunCampaignAsync(string campaignId);
+    Task<List<CampaignTemplateSummary>> ListTemplatesAsync();
+    Task ApproveFindingAsync(string campaignId, string findingId);
+    Task RejectFindingAsync(string campaignId, string findingId);
+    Task BulkApproveAsync(string campaignId);
+    Task BulkRejectAsync(string campaignId);
 }
 
 public class CampaignApiService : ICampaignApiService
@@ -80,6 +86,52 @@ public class CampaignApiService : ICampaignApiService
         var json = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<CampaignSummary>(json, JsonOptions)!;
     }
+
+    public async Task<List<CampaignTemplateSummary>> ListTemplatesAsync()
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.GetAsync("/api/campaigns/templates");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<List<CampaignTemplateSummary>>(json, JsonOptions) ?? [];
+    }
+
+    public async Task<List<CampaignFindingSummary>> GetPendingApprovalsAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.GetAsync($"/api/campaigns/{campaignId}/findings?status=pending_approval");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<List<CampaignFindingSummary>>(json, JsonOptions) ?? [];
+    }
+
+    public async Task ApproveFindingAsync(string campaignId, string findingId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/findings/{findingId}/approve", null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RejectFindingAsync(string campaignId, string findingId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/findings/{findingId}/reject", null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task BulkApproveAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/findings/approve-all", null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task BulkRejectAsync(string campaignId)
+    {
+        await AttachBearerTokenAsync();
+        var response = await _httpClient.PostAsync($"/api/campaigns/{campaignId}/findings/reject-all", null);
+        response.EnsureSuccessStatusCode();
+    }
 }
 
 public class CampaignSummary
@@ -106,12 +158,23 @@ public class CampaignStatsSummary
 
 public class CampaignFindingSummary
 {
+    public string Id { get; set; } = "";
     public string Title { get; set; } = "";
     public string Severity { get; set; } = "";
     public string? Repo { get; set; }
     public string Status { get; set; } = "";
     public int? IssueNumber { get; set; }
     public string? IssueUrl { get; set; }
+}
+
+public class CampaignTemplateSummary
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Category { get; set; } = "";
+    public string SourceType { get; set; } = "";
+    public string Icon { get; set; } = "📋";
 }
 
 public class CreateCampaignRequest

@@ -1,0 +1,97 @@
+@page "/campaigns/templates"
+@using Microsoft.AspNetCore.Authorization
+@using MX.IDP.Web.Services
+@attribute [Authorize]
+@inject ICampaignApiService CampaignApi
+@inject NavigationManager Navigation
+
+<div class="campaigns-container">
+    <div class="campaigns-header">
+        <h2 style="margin: 0; color: #e0e0e0;">📋 Campaign Templates</h2>
+        <a href="/campaigns" class="btn-secondary" style="text-decoration: none;">← Back to Campaigns</a>
+    </div>
+
+    @if (_loading)
+    {
+        <p style="color: #888;">Loading templates...</p>
+    }
+    else
+    {
+        <div class="template-categories">
+            @foreach (var category in _categories)
+            {
+                <button class="@(category == _selectedCategory ? "category-tab active" : "category-tab")"
+                        @onclick="() => _selectedCategory = category">
+                    @FormatCategory(category)
+                </button>
+            }
+        </div>
+
+        <div class="template-grid">
+            @foreach (var template in FilteredTemplates)
+            {
+                <div class="template-card">
+                    <div class="template-icon">@template.Icon</div>
+                    <h3 style="color: #e0e0e0; margin: 8px 0 4px;">@template.Name</h3>
+                    <span class="source-badge">@template.SourceType</span>
+                    <p style="color: #888; font-size: 13px; margin: 8px 0;">@template.Description</p>
+                    <button class="btn-accent" style="width: 100%;" @onclick="() => CreateFromTemplate(template)" disabled="@_creating">
+                        @(_creatingId == template.Id ? "Creating..." : "Use Template")
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<CampaignTemplateSummary> _templates = [];
+    private List<string> _categories = [];
+    private string _selectedCategory = "all";
+    private bool _loading = true;
+    private bool _creating;
+    private string? _creatingId;
+
+    private IEnumerable<CampaignTemplateSummary> FilteredTemplates =>
+        _selectedCategory == "all" ? _templates : _templates.Where(t => t.Category == _selectedCategory);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _templates = await CampaignApi.ListTemplatesAsync(); }
+        catch { _templates = []; }
+
+        _categories = ["all", .. _templates.Select(t => t.Category).Distinct().OrderBy(c => c)];
+        _loading = false;
+    }
+
+    private async Task CreateFromTemplate(CampaignTemplateSummary template)
+    {
+        _creating = true;
+        _creatingId = template.Id;
+        try
+        {
+            await CampaignApi.CreateCampaignAsync(new CreateCampaignRequest
+            {
+                Name = template.Name,
+                SourceType = template.SourceType,
+                Description = template.Description
+            });
+            Navigation.NavigateTo("/campaigns");
+        }
+        finally
+        {
+            _creating = false;
+            _creatingId = null;
+        }
+    }
+
+    private static string FormatCategory(string category) => category switch
+    {
+        "all" => "All",
+        "security" => "🔒 Security",
+        "cost" => "💰 Cost",
+        "compliance" => "📜 Compliance",
+        "hygiene" => "🧹 Hygiene",
+        _ => category
+    };
+}
