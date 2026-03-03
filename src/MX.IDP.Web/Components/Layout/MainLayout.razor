@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Identity.Web
 @using System.Reflection
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
@@ -43,7 +44,24 @@
     </header>
     <div style="display: flex; flex: 1; overflow: hidden;">
         <main class="chat-main">
-            @Body
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent Context="ex">
+                    @{
+                        HandleError(ex);
+                    }
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 48px;">
+                        <div style="text-align: center; max-width: 500px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+                            <h3 style="color: #e0e0e0; margin: 0 0 8px;">Session Expired</h3>
+                            <p style="color: #888; margin: 0 0 16px;">Your authentication session needs to be refreshed.</p>
+                            <a href="MicrosoftIdentity/Account/SignIn" class="btn-accent" style="text-decoration: none; display: inline-block;">Sign In Again</a>
+                        </div>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
         </main>
         <nav class="sidebar">
             <div class="sidebar-header">
@@ -60,6 +78,25 @@
 </div>
 
 @code {
+    private ErrorBoundary? _errorBoundary;
+
+    protected override void OnParametersSet()
+    {
+        // Reset error boundary when navigating to a new page
+        _errorBoundary?.Recover();
+    }
+
+    private void HandleError(Exception ex)
+    {
+        // Auto-redirect for auth failures
+        if (ex is MicrosoftIdentityWebChallengeUserException ||
+            ex.InnerException is Microsoft.Identity.Client.MsalUiRequiredException ||
+            ex.Message.Contains("IDW10502"))
+        {
+            Navigation.NavigateTo("MicrosoftIdentity/Account/SignIn", forceLoad: true);
+        }
+    }
+
     private void StartNewChat()
     {
         Navigation.NavigateTo("/", forceLoad: true);

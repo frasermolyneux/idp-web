@@ -10,31 +10,19 @@ public interface IKnowledgeApiService
     Task<string> TriggerReindexAsync(string sourceType = "all");
 }
 
-public class KnowledgeApiService : IKnowledgeApiService
+public class KnowledgeApiService : AuthenticatedApiService, IKnowledgeApiService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-    private readonly HttpClient _httpClient;
-    private readonly ITokenAcquisition _tokenAcquisition;
-    private readonly IConfiguration _configuration;
 
     public KnowledgeApiService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, IConfiguration configuration)
+        : base(httpClient, tokenAcquisition, configuration)
     {
-        _httpClient = httpClient;
-        _tokenAcquisition = tokenAcquisition;
-        _configuration = configuration;
-    }
-
-    private async Task AttachBearerTokenAsync()
-    {
-        var scopes = new[] { _configuration["IdpAgents:Scopes"] ?? "" };
-        var token = await _tokenAcquisition.GetAccessTokenForUserAsync(scopes);
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
     }
 
     public async Task<KnowledgeStatsResponse> GetStatsAsync()
     {
-        await AttachBearerTokenAsync();
-        var response = await _httpClient.GetAsync("/api/knowledge/stats");
+        await EnsureAuthAsync();
+        var response = await Http.GetAsync("/api/knowledge/stats");
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<KnowledgeStatsResponse>(json, JsonOptions) ?? new();
@@ -42,8 +30,8 @@ public class KnowledgeApiService : IKnowledgeApiService
 
     public async Task<string> TriggerReindexAsync(string sourceType = "all")
     {
-        await AttachBearerTokenAsync();
-        var response = await _httpClient.PostAsync($"/api/knowledge/reindex?sourceType={sourceType}", null);
+        await EnsureAuthAsync();
+        var response = await Http.PostAsync($"/api/knowledge/reindex?sourceType={sourceType}", null);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync();
     }

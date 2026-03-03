@@ -6,11 +6,8 @@ using MX.IDP.Web.Models;
 
 namespace MX.IDP.Web.Services;
 
-public class ChatApiService : IChatApiService
+public class ChatApiService : AuthenticatedApiService, IChatApiService
 {
-    private readonly HttpClient _httpClient;
-    private readonly ITokenAcquisition _tokenAcquisition;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<ChatApiService> _logger;
 
     public ChatApiService(
@@ -18,16 +15,14 @@ public class ChatApiService : IChatApiService
         ITokenAcquisition tokenAcquisition,
         IConfiguration configuration,
         ILogger<ChatApiService> logger)
+        : base(httpClient, tokenAcquisition, configuration)
     {
-        _httpClient = httpClient;
-        _tokenAcquisition = tokenAcquisition;
-        _configuration = configuration;
         _logger = logger;
     }
 
     public async Task<ChatApiResponse> SendMessageAsync(string message, string? conversationId, List<ChatMessage>? history)
     {
-        await AttachBearerTokenAsync();
+        await EnsureAuthAsync();
 
         var payload = new
         {
@@ -39,7 +34,7 @@ public class ChatApiService : IChatApiService
         var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync("/api/chat", content);
+        var response = await Http.PostAsync("/api/chat", content);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadAsStringAsync();
@@ -124,14 +119,5 @@ public class ChatApiService : IChatApiService
         {
             return new ChatApiResponse { Message = result };
         }
-    }
-
-    private async Task AttachBearerTokenAsync()
-    {
-        var scopes = _configuration.GetValue<string>("IdpAgents:Scopes");
-        if (string.IsNullOrEmpty(scopes)) return;
-
-        var token = await _tokenAcquisition.GetAccessTokenForUserAsync(new[] { scopes });
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 }
