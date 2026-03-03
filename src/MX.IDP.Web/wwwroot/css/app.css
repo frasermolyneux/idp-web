@@ -843,6 +843,8 @@ html, body {
     max-width: 1000px;
     margin: 0 auto;
     padding: 24px;
+    overflow-y: auto;
+    height: 100%;
 }
 .knowledge-header {
     display: flex;
