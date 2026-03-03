@@ -135,7 +135,7 @@
             class="chat-textarea"></textarea>
         <button class="send-btn" @onclick="SendMessage"
             disabled="@(string.IsNullOrWhiteSpace(_userInput) || _isLoading)">
-            <FluentIcon Value="@(new Icons.Regular.Size20.Send())" />
+            <FluentIcon Value="@(new Icons.Regular.Size20.Send())" Color="Color.Custom" CustomColor="white" />
             Send
         </button>
     </div>

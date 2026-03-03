@@ -1,5 +1,24 @@
 /* IDP Web - Dark Theme Styles */
 
+/* Navigation links */
+.nav-link {
+    color: #aaa;
+    font-size: 13px;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e0e0e0;
+}
+
+.nav-link:active {
+    background: rgba(255, 255, 255, 0.12);
+}
+
 :root {
     --idp-bg: #1e1e1e;
     --idp-bg-secondary: #252526;
