@@ -1,6 +1,7 @@
 @page "/knowledge"
 @using MX.IDP.Web.Services
 @using Microsoft.FluentUI.AspNetCore.Components
+@using Microsoft.Identity.Web
 @inject IKnowledgeApiService KnowledgeApi
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
@@ -140,6 +141,7 @@
         {
             _stats = await KnowledgeApi.GetStatsAsync();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch (Exception ex)
         {
             _error = $"Failed to load stats: {ex.Message}";
@@ -169,6 +171,7 @@
             _reindexMessage = "Reindex triggered successfully. Refresh in a minute to see updated stats.";
             await LoadStatsAsync();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch (Exception ex)
         {
             _reindexMessage = $"Reindex failed: {ex.Message}";

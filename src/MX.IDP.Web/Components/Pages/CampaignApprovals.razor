@@ -1,5 +1,6 @@
 @page "/campaigns/approvals"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Identity.Web
 @using MX.IDP.Web.Services
 @attribute [Authorize]
 @inject ICampaignApiService CampaignApi
@@ -97,9 +98,11 @@
                     var pending = await CampaignApi.GetPendingApprovalsAsync(campaign.Id);
                     if (pending.Count > 0) _pendingByCampaign[campaign.Id] = pending;
                 }
+                catch (MicrosoftIdentityWebChallengeUserException) { throw; }
                 catch { /* skip */ }
             }
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { _campaigns = []; }
         _loading = false;
     }

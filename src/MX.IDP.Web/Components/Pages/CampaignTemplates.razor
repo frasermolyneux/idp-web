@@ -1,5 +1,6 @@
 @page "/campaigns/templates"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Identity.Web
 @using MX.IDP.Web.Services
 @attribute [Authorize]
 @inject ICampaignApiService CampaignApi
@@ -78,6 +79,7 @@
     protected override async Task OnInitializedAsync()
     {
         try { _templates = await CampaignApi.ListTemplatesAsync(); }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { _templates = []; }
 
         _categories = ["all", .. _templates.Select(t => t.Category).Distinct().OrderBy(c => c)];
@@ -97,6 +99,7 @@
             await Task.Delay(800);
             Navigation.NavigateTo("/campaigns");
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch
         {
             _statusMessage = "Failed to create campaign from template";

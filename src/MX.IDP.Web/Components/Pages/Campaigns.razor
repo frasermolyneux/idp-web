@@ -1,5 +1,6 @@
 @page "/campaigns"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Identity.Web
 @using MX.IDP.Web.Services
 @attribute [Authorize]
 @inject ICampaignApiService CampaignApi
@@ -235,6 +236,7 @@
     {
         _loading = true;
         try { _campaigns = await CampaignApi.ListCampaignsAsync(); }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { _campaigns = []; }
         _loading = false;
     }
@@ -266,6 +268,7 @@
             ShowStatus("Campaign created successfully");
             await LoadCampaigns();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Failed to create campaign", false); }
         finally { _creating = false; }
     }
@@ -274,6 +277,7 @@
     {
         _selectedCampaign = campaign;
         try { _findings = await CampaignApi.GetFindingsAsync(campaign.Id); }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { _findings = []; }
     }
 
@@ -288,6 +292,7 @@
             ShowStatus($"Campaign run completed — {_findings.Count} findings");
             await LoadCampaigns();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Campaign run failed", false); }
         finally { _actionInProgress = false; }
     }
@@ -303,6 +308,7 @@
             ShowStatus($"Preview complete — {_findings.Count(f => f.Status == "preview")} findings would be created");
             await LoadCampaigns();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Preview failed", false); }
         finally { _actionInProgress = false; }
     }
@@ -317,6 +323,7 @@
             ShowStatus("Campaign paused");
             await LoadCampaigns();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Failed to pause", false); }
         finally { _actionInProgress = false; }
     }
@@ -332,6 +339,7 @@
             ShowStatus("Campaign resumed and completed");
             await LoadCampaigns();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Failed to resume", false); }
         finally { _actionInProgress = false; }
     }
@@ -346,6 +354,7 @@
             ShowStatus("Campaign cancelled");
             await LoadCampaigns();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Failed to cancel", false); }
         finally { _actionInProgress = false; }
     }
@@ -362,6 +371,7 @@
             ShowStatus("Campaign deleted");
             await LoadCampaigns();
         }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Failed to delete", false); }
         finally { _actionInProgress = false; }
     }
