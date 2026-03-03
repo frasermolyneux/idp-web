@@ -1,0 +1,182 @@
+@page "/knowledge"
+@using MX.IDP.Web.Services
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject IKnowledgeApiService KnowledgeApi
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<PageTitle>Knowledge Base - IDP</PageTitle>
+
+<div class="knowledge-admin">
+    <div class="knowledge-header">
+        <h2>Knowledge Base</h2>
+        <div class="knowledge-actions">
+            <FluentButton Appearance="Appearance.Accent" OnClick="TriggerReindex" Disabled="@_reindexing">
+                @if (_reindexing)
+                {
+                    <FluentIcon Value="@(new Icons.Regular.Size16.ArrowSync())" Style="width: 14px; height: 14px;" />
+                    <span>Reindexing...</span>
+                }
+                else
+                {
+                    <FluentIcon Value="@(new Icons.Regular.Size16.ArrowSync())" Color="Color.Custom" CustomColor="white" Style="width: 14px; height: 14px;" />
+                    <span>Reindex All</span>
+                }
+            </FluentButton>
+        </div>
+    </div>
+
+    @if (_reindexMessage is not null)
+    {
+        <div class="knowledge-alert @(_reindexError ? "error" : "success")">@_reindexMessage</div>
+    }
+
+    @if (_loading)
+    {
+        <div class="knowledge-loading">Loading index statistics...</div>
+    }
+    else if (_error is not null)
+    {
+        <div class="knowledge-alert error">@_error</div>
+    }
+    else if (_stats is not null)
+    {
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-value">@_stats.TotalSources</div>
+                <div class="stat-label">Sources</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@_stats.TotalDocuments</div>
+                <div class="stat-label">Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@_stats.TotalChunks</div>
+                <div class="stat-label">Chunks</div>
+            </div>
+        </div>
+
+        @if (_stats.Sources.Count == 0)
+        {
+            <div class="knowledge-empty">No documents indexed yet. Upload documents or trigger a reindex.</div>
+        }
+        else
+        {
+            @foreach (var source in _stats.Sources)
+            {
+                <div class="source-section">
+                    <div class="source-header" @onclick="() => ToggleSource(source.SourceName)">
+                        <div class="source-info">
+                            <span class="source-type-badge @source.SourceType">@source.SourceType.Replace("_", " ")</span>
+                            <span class="source-name">@source.SourceName</span>
+                        </div>
+                        <div class="source-meta">
+                            <span>@source.DocumentCount docs · @source.ChunkCount chunks</span>
+                            @if (_expandedSources.Contains(source.SourceName))
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size16.ChevronUp())" Style="width: 14px; height: 14px;" />
+                        }
+                        else
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size16.ChevronDown())" Style="width: 14px; height: 14px;" />
+                        }
+                        </div>
+                    </div>
+
+                    @if (_expandedSources.Contains(source.SourceName))
+                    {
+                        <div class="doc-list">
+                            <div class="doc-list-header">
+                                <span>Document</span>
+                                <span>Path</span>
+                                <span>Chunks</span>
+                                <span>Last Updated</span>
+                            </div>
+                            @foreach (var doc in source.Documents)
+                            {
+                                <div class="doc-row">
+                                    <span class="doc-title">@doc.Title</span>
+                                    <span class="doc-path">
+                                        @if (source.SourceType == "github_repo")
+                                        {
+                                            <a href="https://github.com/frasermolyneux/@source.SourceName/blob/main/@doc.FilePath"
+                                               target="_blank" rel="noopener">@doc.FilePath</a>
+                                        }
+                                        else
+                                        {
+                                            @doc.FilePath
+                                        }
+                                    </span>
+                                    <span class="doc-chunks">@doc.ChunkCount</span>
+                                    <span class="doc-updated">@(doc.LastUpdated?.ToString("yyyy-MM-dd HH:mm") ?? "—")</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    private KnowledgeStatsResponse? _stats;
+    private bool _loading = true;
+    private string? _error;
+    private bool _reindexing;
+    private string? _reindexMessage;
+    private bool _reindexError;
+    private readonly HashSet<string> _expandedSources = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatsAsync();
+    }
+
+    private async Task LoadStatsAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _stats = await KnowledgeApi.GetStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load stats: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ToggleSource(string sourceName)
+    {
+        if (!_expandedSources.Remove(sourceName))
+            _expandedSources.Add(sourceName);
+    }
+
+    private async Task TriggerReindex()
+    {
+        _reindexing = true;
+        _reindexMessage = null;
+        _reindexError = false;
+        StateHasChanged();
+
+        try
+        {
+            var result = await KnowledgeApi.TriggerReindexAsync("all");
+            _reindexMessage = "Reindex triggered successfully. Refresh in a minute to see updated stats.";
+            await LoadStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            _reindexMessage = $"Reindex failed: {ex.Message}";
+            _reindexError = true;
+        }
+        finally
+        {
+            _reindexing = false;
+        }
+    }
+}

@@ -58,6 +58,17 @@ builder.Services.AddHttpClient<ICampaignApiService, CampaignApiService>(client =
     client.Timeout = TimeSpan.FromMinutes(5);
 });
 
+// Configure KnowledgeApiService HttpClient
+builder.Services.AddHttpClient<IKnowledgeApiService, KnowledgeApiService>(client =>
+{
+    var baseUrl = builder.Configuration["IdpAgents:BaseUrl"];
+    if (!string.IsNullOrEmpty(baseUrl))
+    {
+        client.BaseAddress = new Uri(baseUrl);
+    }
+    client.Timeout = TimeSpan.FromMinutes(2);
+});
+
 // FluentUI
 builder.Services.AddFluentUIComponents();
 

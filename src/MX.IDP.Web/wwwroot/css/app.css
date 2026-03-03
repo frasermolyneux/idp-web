@@ -2,21 +2,26 @@
 
 /* Navigation links */
 .nav-link {
-    color: #aaa;
+    color: #999;
     font-size: 13px;
+    font-weight: 500;
     text-decoration: none;
-    padding: 6px 12px;
+    padding: 6px 14px;
     border-radius: 6px;
-    transition: background 0.15s, color 0.15s;
+    border: 1px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .nav-link:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #e0e0e0;
+    border-color: rgba(255, 255, 255, 0.1);
+    text-decoration: none;
 }
 
 .nav-link:active {
     background: rgba(255, 255, 255, 0.12);
+    text-decoration: none;
 }
 
 :root {
@@ -720,4 +725,181 @@ html, body {
     padding: 4px 10px;
     border-radius: 4px;
     cursor: pointer;
+}
+
+/* Knowledge Admin */
+.knowledge-admin {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+}
+.knowledge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.knowledge-header h2 {
+    color: var(--idp-text);
+    font-size: 20px;
+    margin: 0;
+}
+.knowledge-actions {
+    display: flex;
+    gap: 8px;
+}
+.knowledge-loading {
+    color: var(--idp-text-muted);
+    text-align: center;
+    padding: 40px;
+}
+.knowledge-empty {
+    color: var(--idp-text-muted);
+    text-align: center;
+    padding: 40px;
+    border: 1px dashed var(--idp-border);
+    border-radius: 8px;
+}
+.knowledge-alert {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+.knowledge-alert.success {
+    background: rgba(74, 222, 128, 0.1);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.2);
+}
+.knowledge-alert.error {
+    background: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+}
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.stat-card {
+    background: var(--idp-bg-secondary);
+    border: 1px solid var(--idp-border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+.stat-value {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--idp-accent);
+}
+.stat-label {
+    font-size: 12px;
+    color: var(--idp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+.source-section {
+    background: var(--idp-bg-secondary);
+    border: 1px solid var(--idp-border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+.source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.source-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+.source-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.source-type-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.source-type-badge.github_repo {
+    background: rgba(14, 165, 233, 0.15);
+    color: #0ea5e9;
+}
+.source-type-badge.blob_storage {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+}
+.source-name {
+    color: var(--idp-text);
+    font-weight: 500;
+    font-size: 14px;
+}
+.source-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--idp-text-muted);
+    font-size: 13px;
+}
+.doc-list {
+    border-top: 1px solid var(--idp-border);
+    padding: 0 16px 12px;
+}
+.doc-list-header {
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr 2fr;
+    gap: 8px;
+    padding: 10px 0 6px;
+    font-size: 11px;
+    color: var(--idp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--idp-border);
+}
+.doc-row {
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr 2fr;
+    gap: 8px;
+    padding: 8px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+.doc-row:last-child {
+    border-bottom: none;
+}
+.doc-title {
+    color: var(--idp-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.doc-path {
+    color: var(--idp-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.doc-path a {
+    color: var(--idp-accent);
+    text-decoration: none;
+}
+.doc-path a:hover {
+    text-decoration: underline;
+}
+.doc-chunks {
+    color: var(--idp-text-muted);
+    text-align: center;
+}
+.doc-updated {
+    color: var(--idp-text-muted);
 }
