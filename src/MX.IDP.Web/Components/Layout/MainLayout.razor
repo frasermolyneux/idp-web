@@ -94,7 +94,7 @@
     private bool IsChatPage()
     {
         var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
-        return string.IsNullOrEmpty(uri) || uri.StartsWith("?");
+        return string.IsNullOrEmpty(uri) || uri.StartsWith("?") || uri.StartsWith("chat", StringComparison.OrdinalIgnoreCase);
     }
 
     private void HandleError(Exception ex)
