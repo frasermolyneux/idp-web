@@ -6,11 +6,13 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Diagnostics
 @using Microsoft.Identity.Web
+@using Microsoft.JSInterop
 @inject IChatApiService ChatApi
 @inject IConversationService ConversationService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ConversationNotifier ConversationNotifier
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <PageTitle>IDP Chat</PageTitle>
@@ -180,6 +182,18 @@
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .Build();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "document.querySelector('.chat-messages')?.scrollTo(0, document.querySelector('.chat-messages').scrollHeight)");
+        }
+        catch
+        {
+            // Ignore JS interop errors during prerendering
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
