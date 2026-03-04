@@ -262,6 +262,42 @@ html, body {
     color: var(--idp-accent);
 }
 
+/* Tables in chat messages */
+.chat-card table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 12px;
+}
+
+.chat-card thead th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--idp-text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 2px solid var(--idp-border);
+    background: var(--idp-code-bg);
+    white-space: nowrap;
+}
+
+.chat-card tbody td {
+    padding: 7px 10px;
+    color: var(--idp-text);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 12px;
+}
+
+.chat-card tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.chat-card tbody tr:last-child td {
+    border-bottom: none;
+}
+
 /* Debug Panel */
 .debug-panel {
     margin-top: 8px;
