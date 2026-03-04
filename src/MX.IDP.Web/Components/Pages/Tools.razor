@@ -16,8 +16,14 @@
         @if (_catalog is not null)
         {
             <div class="tools-stats">
-                <span class="tools-stat">@_catalog.TotalPlugins plugins</span>
-                <span class="tools-stat">@_catalog.TotalFunctions tools</span>
+                <div class="tools-stat">
+                    <span class="tools-stat-number">@_catalog.TotalPlugins</span>
+                    <span class="tools-stat-label">Plugins</span>
+                </div>
+                <div class="tools-stat">
+                    <span class="tools-stat-number">@_catalog.TotalFunctions</span>
+                    <span class="tools-stat-label">Tools</span>
+                </div>
             </div>
         }
     </div>
