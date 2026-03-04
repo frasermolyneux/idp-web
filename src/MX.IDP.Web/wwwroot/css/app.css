@@ -1016,3 +1016,202 @@ html, body {
 .doc-updated {
     color: var(--idp-text-muted);
 }
+
+/* Tools Catalog */
+.tools-catalog {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+    overflow-y: auto;
+    height: 100%;
+}
+.tools-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+.tools-header h2 {
+    color: var(--idp-text);
+    font-size: 20px;
+    margin: 0 0 4px;
+}
+.tools-subtitle {
+    color: var(--idp-text-muted);
+    font-size: 13px;
+    margin: 0;
+}
+.tools-stats {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.tools-stat {
+    background: var(--idp-surface);
+    border: 1px solid var(--idp-border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--idp-text);
+    font-weight: 500;
+}
+.tools-loading {
+    color: var(--idp-text-muted);
+    text-align: center;
+    padding: 40px;
+}
+.tools-alert.error {
+    background: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    padding: 10px 14px;
+    border-radius: 6px;
+}
+.tools-search {
+    margin-bottom: 16px;
+}
+.tools-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--idp-surface);
+    border: 1px solid var(--idp-border);
+    border-radius: 6px;
+    color: var(--idp-text);
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+}
+.tools-search-input:focus {
+    border-color: #0ea5e9;
+}
+.tools-plugin-section {
+    border: 1px solid var(--idp-border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+.tools-plugin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--idp-surface);
+    cursor: pointer;
+    user-select: none;
+}
+.tools-plugin-header:hover {
+    background: #2a2a2a;
+}
+.tools-plugin-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.tools-plugin-icon {
+    font-size: 18px;
+}
+.tools-plugin-name {
+    font-weight: 600;
+    color: var(--idp-text);
+    font-size: 14px;
+}
+.tools-plugin-count {
+    color: var(--idp-text-muted);
+    font-size: 12px;
+}
+.tools-plugin-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.tools-agent-badge {
+    background: rgba(14, 165, 233, 0.15);
+    color: #0ea5e9;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+.tools-chevron {
+    color: var(--idp-text-muted);
+    font-size: 11px;
+    margin-left: 4px;
+}
+.tools-function-list {
+    border-top: 1px solid var(--idp-border);
+}
+.tools-function-card {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--idp-border);
+}
+.tools-function-card:last-child {
+    border-bottom: none;
+}
+.tools-function-header {
+    margin-bottom: 4px;
+}
+.tools-function-name {
+    color: #0ea5e9;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(14, 165, 233, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.tools-function-desc {
+    color: var(--idp-text-muted);
+    font-size: 13px;
+    margin: 6px 0 0;
+    line-height: 1.4;
+}
+.tools-params {
+    margin-top: 10px;
+    border: 1px solid var(--idp-border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 12px;
+}
+.tools-params-header {
+    display: grid;
+    grid-template-columns: 140px 70px 1fr 60px;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--idp-surface);
+    color: var(--idp-text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.tools-param-row {
+    display: grid;
+    grid-template-columns: 140px 70px 1fr 60px;
+    gap: 8px;
+    padding: 6px 10px;
+    border-top: 1px solid var(--idp-border);
+    align-items: center;
+}
+.tools-param-name {
+    color: #c084fc;
+    font-size: 12px;
+}
+.tools-param-type {
+    color: #94a3b8;
+    font-size: 11px;
+}
+.tools-param-desc {
+    color: var(--idp-text-muted);
+    font-size: 12px;
+}
+.tools-param-required {
+    color: #f87171;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.tools-param-optional {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}

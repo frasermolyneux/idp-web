@@ -1,0 +1,167 @@
+@page "/tools"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Identity.Web
+@using MX.IDP.Web.Services
+@attribute [Authorize]
+@inject IToolsCatalogApiService ToolsApi
+
+<PageTitle>Tools - IDP</PageTitle>
+
+<div class="tools-catalog">
+    <div class="tools-header">
+        <div>
+            <h2>Tool Catalog</h2>
+            <p class="tools-subtitle">All available tools across the IDP agent platform. These tools are available via chat, MCP, and campaigns.</p>
+        </div>
+        @if (_catalog is not null)
+        {
+            <div class="tools-stats">
+                <span class="tools-stat">@_catalog.TotalPlugins plugins</span>
+                <span class="tools-stat">@_catalog.TotalFunctions tools</span>
+            </div>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <div class="tools-loading">Loading tool catalog...</div>
+    }
+    else if (_error is not null)
+    {
+        <div class="tools-alert error">@_error</div>
+    }
+    else if (_catalog is not null)
+    {
+        <div class="tools-search">
+            <input type="text" @bind="_searchQuery" @bind:event="oninput" placeholder="Search tools..." class="tools-search-input" />
+        </div>
+
+        @foreach (var plugin in _catalog.Plugins)
+        {
+            var filteredFunctions = FilterFunctions(plugin);
+            if (filteredFunctions.Count == 0) continue;
+
+            <div class="tools-plugin-section">
+                <div class="tools-plugin-header" @onclick="() => TogglePlugin(plugin.Plugin)">
+                    <div class="tools-plugin-info">
+                        <span class="tools-plugin-icon">@GetPluginIcon(plugin.Plugin)</span>
+                        <span class="tools-plugin-name">@plugin.Plugin</span>
+                        <span class="tools-plugin-count">@filteredFunctions.Count tools</span>
+                    </div>
+                    <div class="tools-plugin-meta">
+                        @foreach (var agent in plugin.Agents)
+                        {
+                            <span class="tools-agent-badge">@agent</span>
+                        }
+                        <span class="tools-chevron">@(_expandedPlugins.Contains(plugin.Plugin) ? "▲" : "▼")</span>
+                    </div>
+                </div>
+
+                @if (_expandedPlugins.Contains(plugin.Plugin))
+                {
+                    <div class="tools-function-list">
+                        @foreach (var func in filteredFunctions)
+                        {
+                            <div class="tools-function-card">
+                                <div class="tools-function-header">
+                                    <code class="tools-function-name">@func.Name</code>
+                                </div>
+                                <p class="tools-function-desc">@func.Description</p>
+
+                                @if (func.Parameters.Count > 0)
+                                {
+                                    <div class="tools-params">
+                                        <div class="tools-params-header">
+                                            <span>Parameter</span>
+                                            <span>Type</span>
+                                            <span>Description</span>
+                                            <span></span>
+                                        </div>
+                                        @foreach (var param in func.Parameters)
+                                        {
+                                            <div class="tools-param-row">
+                                                <code class="tools-param-name">@param.Name</code>
+                                                <span class="tools-param-type">@param.Type</span>
+                                                <span class="tools-param-desc">@param.Description</span>
+                                                <span>
+                                                    @if (param.Required)
+                                                    {
+                                                        <span class="tools-param-required">required</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="tools-param-optional">optional</span>
+                                                    }
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private ToolsCatalogResponse? _catalog;
+    private bool _loading = true;
+    private string? _error;
+    private string _searchQuery = "";
+    private readonly HashSet<string> _expandedPlugins = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _catalog = await ToolsApi.GetCatalogAsync();
+            // Expand all by default
+            foreach (var p in _catalog.Plugins)
+                _expandedPlugins.Add(p.Plugin);
+        }
+        catch (MicrosoftIdentityWebChallengeUserException) { throw; }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load tools catalog: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void TogglePlugin(string plugin)
+    {
+        if (!_expandedPlugins.Remove(plugin))
+            _expandedPlugins.Add(plugin);
+    }
+
+    private List<ToolFunctionDto> FilterFunctions(ToolPluginDto plugin)
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+            return plugin.Functions;
+
+        var q = _searchQuery.Trim();
+        return plugin.Functions.Where(f =>
+            f.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+            f.Description.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+            f.Parameters.Any(p => p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                                  p.Description.Contains(q, StringComparison.OrdinalIgnoreCase))
+        ).ToList();
+    }
+
+    private static string GetPluginIcon(string plugin) => plugin switch
+    {
+        "AzureSubscriptions" => "🔑",
+        "AzureResourceGraph" => "📊",
+        "AzureAdvisor" => "💡",
+        "AzurePolicy" => "📜",
+        "GitHub" => "🐙",
+        "Knowledge" => "📚",
+        "Campaign" => "🎯",
+        _ => "🔧"
+    };
+}
