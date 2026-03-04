@@ -132,6 +132,15 @@ html, body {
     background: var(--idp-bg);
 }
 
+.page-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--idp-bg);
+}
+
 /* Chat Messages */
 .chat-messages {
     flex: 1;
@@ -553,8 +562,6 @@ html, body {
     padding: 24px 32px;
     max-width: 1200px;
     margin: 0 auto;
-    overflow-y: auto;
-    height: 100%;
 }
 .campaigns-header {
     display: flex;
@@ -843,8 +850,6 @@ html, body {
     max-width: 1000px;
     margin: 0 auto;
     padding: 24px;
-    overflow-y: auto;
-    height: 100%;
 }
 .knowledge-header {
     display: flex;
@@ -1022,8 +1027,6 @@ html, body {
     max-width: 1000px;
     margin: 0 auto;
     padding: 24px;
-    overflow-y: auto;
-    height: 100%;
 }
 .tools-header {
     display: flex;

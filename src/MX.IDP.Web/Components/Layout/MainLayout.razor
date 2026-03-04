@@ -10,6 +10,7 @@
     var informationalVersion = entryAssembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
     var buildVersion = informationalVersion.Split('+')[0];
     var assemblyVersion = entryAssembly?.GetName().Version?.ToString() ?? "unknown";
+    var isChatPage = IsChatPage();
 }
 
 <div style="display: flex; flex-direction: column; height: 100vh; background: #1e1e1e;">
@@ -44,7 +45,7 @@
         </AuthorizeView>
     </header>
     <div style="display: flex; flex: 1; overflow: hidden;">
-        <main class="chat-main">
+        <main class="@(isChatPage ? "chat-main" : "page-main")">
             <ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>
                     @Body
@@ -64,17 +65,20 @@
                 </ErrorContent>
             </ErrorBoundary>
         </main>
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <FluentButton Appearance="Appearance.Accent" OnClick="StartNewChat" Style="width: 100%;"
-                    IconStart="@(new Icons.Regular.Size20.Add())">
-                    New Chat
-                </FluentButton>
-            </div>
-            <div class="sidebar-conversations">
-                <ConversationList />
-            </div>
-        </nav>
+        @if (isChatPage)
+        {
+            <nav class="sidebar">
+                <div class="sidebar-header">
+                    <FluentButton Appearance="Appearance.Accent" OnClick="StartNewChat" Style="width: 100%;"
+                        IconStart="@(new Icons.Regular.Size20.Add())">
+                        New Chat
+                    </FluentButton>
+                </div>
+                <div class="sidebar-conversations">
+                    <ConversationList />
+                </div>
+            </nav>
+        }
     </div>
 </div>
 
@@ -85,6 +89,12 @@
     {
         // Reset error boundary when navigating to a new page
         _errorBoundary?.Recover();
+    }
+
+    private bool IsChatPage()
+    {
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
+        return string.IsNullOrEmpty(uri) || uri.StartsWith("?");
     }
 
     private void HandleError(Exception ex)
