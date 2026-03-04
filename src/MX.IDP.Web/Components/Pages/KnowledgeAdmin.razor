@@ -11,17 +11,17 @@
     <div class="knowledge-header">
         <h2>Knowledge Base</h2>
         <div class="knowledge-actions">
-            <FluentButton Appearance="Appearance.Accent" OnClick="TriggerReindex" Disabled="@_reindexing">
-                @if (_reindexing)
-                {
-                    <FluentIcon Value="@(new Icons.Regular.Size16.ArrowSync())" Style="width: 14px; height: 14px;" />
-                    <span>Reindexing...</span>
-                }
-                else
-                {
-                    <FluentIcon Value="@(new Icons.Regular.Size16.ArrowSync())" Color="Color.Custom" CustomColor="white" Style="width: 14px; height: 14px;" />
-                    <span>Reindex All</span>
-                }
+            <FluentButton Appearance="Appearance.Stealth" OnClick="@(() => TriggerReindex("github_repo"))" Disabled="@_reindexing" title="Reindex GitHub repositories only">
+                <FluentIcon Value="@(new Icons.Regular.Size16.ArrowSync())" Style="width: 14px; height: 14px;" />
+                <span>@(_reindexingType == "github_repo" ? "Reindexing..." : "Reindex GitHub")</span>
+            </FluentButton>
+            <FluentButton Appearance="Appearance.Stealth" OnClick="@(() => TriggerReindex("blob_storage"))" Disabled="@_reindexing" title="Reindex blob storage documents only">
+                <FluentIcon Value="@(new Icons.Regular.Size16.ArrowSync())" Style="width: 14px; height: 14px;" />
+                <span>@(_reindexingType == "blob_storage" ? "Reindexing..." : "Reindex Blob Storage")</span>
+            </FluentButton>
+            <FluentButton Appearance="Appearance.Accent" OnClick="@(() => TriggerReindex("all"))" Disabled="@_reindexing" title="Reindex all knowledge sources">
+                <FluentIcon Value="@(new Icons.Regular.Size16.ArrowSync())" Color="Color.Custom" CustomColor="white" Style="width: 14px; height: 14px;" />
+                <span>@(_reindexingType == "all" ? "Reindexing..." : "Reindex All")</span>
             </FluentButton>
         </div>
     </div>
@@ -124,6 +124,7 @@
     private bool _loading = true;
     private string? _error;
     private bool _reindexing;
+    private string? _reindexingType;
     private string? _reindexMessage;
     private bool _reindexError;
     private readonly HashSet<string> _expandedSources = new();
@@ -158,17 +159,19 @@
             _expandedSources.Add(sourceName);
     }
 
-    private async Task TriggerReindex()
+    private async Task TriggerReindex(string sourceType)
     {
         _reindexing = true;
+        _reindexingType = sourceType;
         _reindexMessage = null;
         _reindexError = false;
         StateHasChanged();
 
         try
         {
-            var result = await KnowledgeApi.TriggerReindexAsync("all");
-            _reindexMessage = "Reindex triggered successfully. Refresh in a minute to see updated stats.";
+            var result = await KnowledgeApi.TriggerReindexAsync(sourceType);
+            var label = sourceType == "all" ? "all sources" : sourceType == "github_repo" ? "GitHub repositories" : "blob storage";
+            _reindexMessage = $"Reindex triggered for {label}. Refresh in a minute to see updated stats.";
             await LoadStatsAsync();
         }
         catch (MicrosoftIdentityWebChallengeUserException) { throw; }
@@ -180,6 +183,7 @@
         finally
         {
             _reindexing = false;
+            _reindexingType = null;
         }
     }
 }
