@@ -136,10 +136,11 @@ html, body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    align-items: center;
+    min-height: 0;
     overflow-y: auto;
     background: var(--idp-bg);
-    padding: 32px 48px;
+    padding: 32px 24px;
 }
 
 .page-main::-webkit-scrollbar {
@@ -578,6 +579,7 @@ html, body {
 /* Campaign page styles */
 .campaigns-container {
     width: 100%;
+    max-width: 1400px;
 }
 .campaigns-header {
     display: flex;
@@ -864,6 +866,7 @@ html, body {
 /* Knowledge Admin */
 .knowledge-admin {
     width: 100%;
+    max-width: 1400px;
 }
 .knowledge-header {
     display: flex;
@@ -1039,6 +1042,7 @@ html, body {
 /* Tools Catalog */
 .tools-catalog {
     width: 100%;
+    max-width: 1400px;
 }
 .tools-header {
     display: flex;
@@ -1134,12 +1138,13 @@ html, body {
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
+    background: var(--idp-bg-tertiary);
     cursor: pointer;
     user-select: none;
     transition: background 0.15s;
 }
 .tools-plugin-header:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: #363636;
 }
 .tools-plugin-info {
     display: flex;
@@ -1190,10 +1195,10 @@ html, body {
 }
 .tools-function-list {
     border-top: 1px solid var(--idp-border);
-    padding: 8px;
+    padding: 12px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr));
+    gap: 10px;
 }
 .tools-function-card {
     padding: 16px 18px;
@@ -1240,12 +1245,13 @@ html, body {
     grid-template-columns: 150px 70px 1fr 70px;
     gap: 12px;
     padding: 8px 14px;
-    background: var(--idp-bg-secondary);
+    background: var(--idp-bg-tertiary);
     color: var(--idp-text-muted);
     font-weight: 600;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--idp-border);
 }
 .tools-param-row {
     display: grid;

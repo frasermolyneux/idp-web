@@ -124,9 +124,7 @@
         try
         {
             _catalog = await ToolsApi.GetCatalogAsync();
-            // Expand all by default
-            foreach (var p in _catalog.Plugins)
-                _expandedPlugins.Add(p.Plugin);
+            // Start collapsed for a cleaner overview
         }
         catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch (Exception ex)
