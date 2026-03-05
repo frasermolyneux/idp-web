@@ -193,9 +193,20 @@ public class CampaignSummary
     public string SourceType { get; set; } = "";
     public string Status { get; set; } = "";
     public string Description { get; set; } = "";
+    public string ActionMode { get; set; } = "issue";
+    public bool RequireApproval { get; set; }
+    public CampaignScheduleSummary? Schedule { get; set; }
     public CampaignStatsSummary Stats { get; set; } = new();
     public DateTimeOffset? LastRunAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+}
+
+public class CampaignScheduleSummary
+{
+    public string CronExpression { get; set; } = "";
+    public bool Enabled { get; set; }
+    public DateTimeOffset? NextRun { get; set; }
+    public DateTimeOffset? LastScheduledRun { get; set; }
 }
 
 public class CampaignStatsSummary
@@ -205,6 +216,7 @@ public class CampaignStatsSummary
     public int IssuesOpen { get; set; }
     public int IssuesClosed { get; set; }
     public int IssuesSkipped { get; set; }
+    public int PendingApproval { get; set; }
     public double ProgressPercent { get; set; }
 }
 
@@ -235,4 +247,26 @@ public class CreateCampaignRequest
     public string SourceType { get; set; } = "";
     public string? Description { get; set; }
     public string UserId { get; set; } = "system";
+    public string ActionMode { get; set; } = "issue";
+    public bool RequireApproval { get; set; }
+    public CreateCampaignFilter? Filter { get; set; }
+    public CreateCampaignSchedule? Schedule { get; set; }
+}
+
+public class CreateCampaignFilter
+{
+    public string? Category { get; set; }
+    public string? Impact { get; set; }
+    public List<string>? Repos { get; set; }
+    public List<string>? RepoTopics { get; set; }
+    public List<string>? ExcludeRepos { get; set; }
+    public List<string>? ResourceGroups { get; set; }
+    public string? Severity { get; set; }
+    public string? AssignTo { get; set; }
+}
+
+public class CreateCampaignSchedule
+{
+    public string CronExpression { get; set; } = "";
+    public bool Enabled { get; set; } = true;
 }

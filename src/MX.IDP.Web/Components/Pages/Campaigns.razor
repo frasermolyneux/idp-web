@@ -52,9 +52,55 @@
                     </select>
                     <span class="form-hint">@GetSourceTypeHint(_newSourceType)</span>
                 </div>
+                <div class="form-group">
+                    <label>Action Mode</label>
+                    <select @bind="_newActionMode">
+                        <option value="issue">📝 Create Issues</option>
+                        <option value="copilot_agent">🤖 Assign to Copilot</option>
+                        <option value="audit">📋 Audit Only</option>
+                    </select>
+                    <span class="form-hint">@GetActionModeHint(_newActionMode)</span>
+                </div>
+                <div class="form-group">
+                    <label>Severity Filter</label>
+                    <select @bind="_newSeverity">
+                        <option value="">All severities</option>
+                        <option value="High">🔴 High</option>
+                        <option value="Medium">🟡 Medium</option>
+                        <option value="Low">🟢 Low</option>
+                    </select>
+                </div>
                 <div class="form-group form-full">
                     <label>Description <span style="color: #666;">(optional)</span></label>
                     <input type="text" @bind="_newDescription" placeholder="What this campaign is scanning for" />
+                </div>
+                <div class="form-group">
+                    <label>Repos <span style="color: #666;">(comma-separated, optional)</span></label>
+                    <input type="text" @bind="_newRepos" placeholder="portal-web, portal-core" />
+                </div>
+                <div class="form-group">
+                    <label>Repo Topics <span style="color: #666;">(comma-separated, optional)</span></label>
+                    <input type="text" @bind="_newRepoTopics" placeholder="idp, portal" />
+                </div>
+                <div class="form-group">
+                    <label>Exclude Repos <span style="color: #666;">(comma-separated, optional)</span></label>
+                    <input type="text" @bind="_newExcludeRepos" placeholder="legacy-repo, archived-repo" />
+                </div>
+                @if (_newSourceType is "advisor" or "policy" or "kql")
+                {
+                    <div class="form-group">
+                        <label>Resource Groups <span style="color: #666;">(comma-separated, optional)</span></label>
+                        <input type="text" @bind="_newResourceGroups" placeholder="rg-portal-prd-swe" />
+                    </div>
+                }
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" @bind="_newRequireApproval" id="approvalToggle" />
+                    <label for="approvalToggle" style="margin: 0; cursor: pointer;">Require approval before creating issues</label>
+                </div>
+                <div class="form-group">
+                    <label>Schedule <span style="color: #666;">(cron, optional)</span></label>
+                    <input type="text" @bind="_newCronSchedule" placeholder="0 8 * * 1  (Monday 8am UTC)" />
+                    <span class="form-hint">Standard 5-field cron. Leave empty for manual-only.</span>
                 </div>
             </div>
             <div class="form-actions">
@@ -96,15 +142,34 @@
                     </div>
                     <div class="campaign-card-meta">
                         <span class="source-badge">@FormatSourceType(c.SourceType)</span>
+                        <span class="action-mode-badge mode-@c.ActionMode">@FormatActionMode(c.ActionMode)</span>
+                        @if (c.RequireApproval)
+                        {
+                            <span style="color: #f59e0b; font-size: 12px;" title="Requires approval">🔒 Approval</span>
+                        }
+                        @if (c.Schedule?.Enabled == true)
+                        {
+                            <span style="color: #a78bfa; font-size: 12px;" title="Scheduled: @c.Schedule.CronExpression">⏰ Scheduled</span>
+                        }
+                    </div>
+                    <div class="campaign-card-stats">
                         @if (c.Stats.TotalFindings > 0)
                         {
                             <span style="color: #888;">@c.Stats.TotalFindings findings</span>
                             <span style="color: #4ade80;">@c.Stats.IssuesClosed resolved</span>
                             <span style="color: #facc15;">@c.Stats.IssuesOpen open</span>
+                            @if (c.Stats.PendingApproval > 0)
+                            {
+                                <span style="color: #f59e0b;">@c.Stats.PendingApproval pending</span>
+                            }
                         }
                         @if (c.LastRunAt.HasValue)
                         {
                             <span style="color: #666; margin-left: auto; font-size: 12px;">Last run: @c.LastRunAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                        }
+                        @if (c.Schedule?.NextRun.HasValue == true)
+                        {
+                            <span style="color: #a78bfa; font-size: 12px;">Next: @c.Schedule.NextRun.Value.ToString("yyyy-MM-dd HH:mm")</span>
                         }
                     </div>
                     @if (c.Stats.TotalFindings > 0)
@@ -128,6 +193,15 @@
                     <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
                         <span class="campaign-status status-@_selectedCampaign.Status.ToLower()">@_selectedCampaign.Status</span>
                         <span class="source-badge">@FormatSourceType(_selectedCampaign.SourceType)</span>
+                        <span class="action-mode-badge mode-@_selectedCampaign.ActionMode">@FormatActionMode(_selectedCampaign.ActionMode)</span>
+                        @if (_selectedCampaign.RequireApproval)
+                        {
+                            <span style="color: #f59e0b; font-size: 12px;">🔒 Requires approval</span>
+                        }
+                        @if (_selectedCampaign.Schedule?.Enabled == true)
+                        {
+                            <span style="color: #a78bfa; font-size: 12px;" title="@_selectedCampaign.Schedule.CronExpression">⏰ @_selectedCampaign.Schedule.CronExpression</span>
+                        }
                     </div>
                 </div>
                 <div class="detail-actions">
@@ -223,7 +297,15 @@
     private bool _actionInProgress;
     private string _newName = "";
     private string _newSourceType = "advisor";
+    private string _newActionMode = "issue";
+    private string _newSeverity = "";
     private string? _newDescription;
+    private string? _newRepos;
+    private string? _newRepoTopics;
+    private string? _newExcludeRepos;
+    private string? _newResourceGroups;
+    private string? _newCronSchedule;
+    private bool _newRequireApproval;
     private string? _statusMessage;
     private string _statusClass = "";
 
@@ -256,21 +338,62 @@
         _creating = true;
         try
         {
-            await CampaignApi.CreateCampaignAsync(new CreateCampaignRequest
+            var request = new CreateCampaignRequest
             {
                 Name = _newName,
                 SourceType = _newSourceType,
-                Description = _newDescription
-            });
+                Description = _newDescription,
+                ActionMode = _newActionMode,
+                RequireApproval = _newRequireApproval,
+                Filter = new CreateCampaignFilter
+                {
+                    Repos = ParseCommaSeparated(_newRepos),
+                    RepoTopics = ParseCommaSeparated(_newRepoTopics),
+                    ExcludeRepos = ParseCommaSeparated(_newExcludeRepos),
+                    ResourceGroups = ParseCommaSeparated(_newResourceGroups),
+                    Severity = string.IsNullOrEmpty(_newSeverity) ? null : _newSeverity
+                }
+            };
+
+            if (!string.IsNullOrWhiteSpace(_newCronSchedule))
+            {
+                request.Schedule = new CreateCampaignSchedule
+                {
+                    CronExpression = _newCronSchedule.Trim(),
+                    Enabled = true
+                };
+            }
+
+            await CampaignApi.CreateCampaignAsync(request);
             _showCreate = false;
-            _newName = "";
-            _newDescription = null;
+            ResetCreateForm();
             ShowStatus("Campaign created successfully");
             await LoadCampaigns();
         }
         catch (MicrosoftIdentityWebChallengeUserException) { throw; }
         catch { ShowStatus("Failed to create campaign", false); }
         finally { _creating = false; }
+    }
+
+    private void ResetCreateForm()
+    {
+        _newName = "";
+        _newDescription = null;
+        _newActionMode = "issue";
+        _newSeverity = "";
+        _newRepos = null;
+        _newRepoTopics = null;
+        _newExcludeRepos = null;
+        _newResourceGroups = null;
+        _newCronSchedule = null;
+        _newRequireApproval = false;
+    }
+
+    private static List<string>? ParseCommaSeparated(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var items = value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        return items.Count > 0 ? items : null;
     }
 
     private async Task SelectCampaign(CampaignSummary campaign)
@@ -386,6 +509,22 @@
         "codeql" => "🔒 CodeQL",
         "kql" => "📊 KQL",
         _ => sourceType
+    };
+
+    private static string FormatActionMode(string mode) => mode switch
+    {
+        "audit" => "📋 Audit",
+        "issue" => "📝 Issues",
+        "copilot_agent" => "🤖 Copilot",
+        _ => mode
+    };
+
+    private static string GetActionModeHint(string mode) => mode switch
+    {
+        "audit" => "Findings are recorded but no GitHub issues are created",
+        "issue" => "Creates GitHub issues for each finding",
+        "copilot_agent" => "Creates issues and assigns to Copilot for automated remediation",
+        _ => ""
     };
 
     private static string GetSourceTypeHint(string sourceType) => sourceType switch
