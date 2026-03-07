@@ -45,6 +45,8 @@ resource "azurerm_linux_web_app" "app" {
   lifecycle {
     ignore_changes = [app_settings["WEBSITE_RUN_FROM_PACKAGE"]]
   }
+
+  tags = var.tags
 }
 
 resource "azurerm_app_service_custom_hostname_binding" "primary" {

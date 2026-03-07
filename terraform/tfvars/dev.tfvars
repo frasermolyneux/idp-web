@@ -1,6 +1,5 @@
 environment = "dev"
 location    = "swedencentral"
-instance    = "01"
 
 subscription_id = "6cad03c1-9e98-4160-8ebe-64dd30f1bbc7"
 
@@ -9,6 +8,8 @@ idp_core_state = {
   storage_account_name = "sa537ff6e2bfe3"
   container_name       = "tfstate"
   key                  = "terraform.tfstate"
+  subscription_id      = "7760848c-794d-4a19-8cb2-52f71a21ac2b"
+  tenant_id            = "e56a6947-bb9a-4a6e-846a-1f118d1c3a14"
 }
 
 platform_hosting_state = {
@@ -16,6 +17,8 @@ platform_hosting_state = {
   storage_account_name = "saa3efe8753ccf"
   container_name       = "tfstate"
   key                  = "terraform.tfstate"
+  subscription_id      = "7760848c-794d-4a19-8cb2-52f71a21ac2b"
+  tenant_id            = "e56a6947-bb9a-4a6e-846a-1f118d1c3a14"
 }
 
 platform_workloads_state = {
@@ -32,4 +35,11 @@ dns = {
   resource_group_name = "rg-platform-dns-prd-uksouth-01"
   domain              = "molyneux.io"
   subdomain           = "idp.dev"
+}
+
+tags = {
+  Environment = "dev",
+  Workload    = "idp-web",
+  DeployedBy  = "GitHub-Terraform",
+  Git         = "https://github.com/frasermolyneux/idp-web"
 }
